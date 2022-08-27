@@ -11,6 +11,18 @@ namespace RPGGame.Gameplay
     {
         [SerializeField] private KCC _kcc;
         [SerializeField][Range(0f, 100f)] private float _speed = 5f;
+	    [SerializeField][Range(0f, 100f)] private float _lookTurnRate = 1.5f;
+
+        private static PlayerCharacter _local;
+        public static PlayerCharacter Local => _local;
+
+        public override void Spawned()
+        {
+            if (Object.HasInputAuthority)
+            {
+                _local = this;
+            }
+        }
 
         public override void FixedUpdateNetwork()
         {
@@ -23,6 +35,12 @@ namespace RPGGame.Gameplay
 
                 _kcc.SetInputDirection(direction);
                 _kcc.SetKinematicVelocity(direction * _speed);
+
+                if (direction.sqrMagnitude > 0f)
+                {
+                    Quaternion targetQ = Quaternion.AngleAxis(Mathf.Atan2(direction.z, direction.x) * Mathf.Rad2Deg - 90, Vector3.down);
+                    _kcc.SetLookRotation(Quaternion.RotateTowards(transform.rotation, targetQ, _lookTurnRate * 360 * Runner.DeltaTime));
+                }
             }
         }
     }

@@ -13,6 +13,7 @@ namespace RPGGame.UiControllers
     public class SessionUiController : MonoBehaviour
     {
         [SerializeField] private Button _leaveButton;
+        [SerializeField] private Button _startGameButton;
         [SerializeField] private Transform _playersList;
         [SerializeField] private PlayerItemUiController _playerItemPrefab;
 
@@ -21,6 +22,7 @@ namespace RPGGame.UiControllers
         private void Awake()
         {
             _leaveButton.onClick.AddListener(OnLeave);
+            _startGameButton.onClick.AddListener(OnStartGame);
         }
 
         private void Start()
@@ -43,6 +45,11 @@ namespace RPGGame.UiControllers
         private void OnLeave()
         {
             NetworkManager.Instance.LeaveSessionTask().Forget();
+        }
+
+        private void OnStartGame()
+        {
+            NetworkManager.Instance.StartGame();
         }
 
         private void PlayerSpawned(Player player)

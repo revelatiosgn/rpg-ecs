@@ -13,9 +13,13 @@ namespace RPGGame.Model
     {
         [SerializeField] private NetworkRunner _networkRunner;
         [SerializeField] private Player _playerPrefab;
+        [SerializeField] private NetworkSceneManagerBase _networkSceneManager;
+        [SerializeField] private bool _debugAutoconnect = false;
 
         private Dictionary<PlayerRef, Player> _players = new Dictionary<PlayerRef, Player>();
         public ICollection<Player> Players => _players.Values;
+
+	    private InputData _inputData;
 
         private static NetworkManager _instance;
         public static NetworkManager Instance => _instance;
@@ -44,16 +48,16 @@ namespace RPGGame.Model
                 if (SceneManager.GetActiveScene().buildIndex != 0)
                     SceneManager.LoadScene(0);
 
-                // if (_debugAutoconnect)
-                // {
-                //     _networkRunner.StartGame(new StartGameArgs
-                //     {
-                //         GameMode = GameMode.Host,
-                //         SceneManager = _mapLoader,
-                //         SessionName = "TestSession"
-                //     });
-                // }
-                // else
+                if (_debugAutoconnect)
+                {
+                    _networkRunner.StartGame(new StartGameArgs
+                    {
+                        GameMode = GameMode.Host,
+                        SceneManager = _networkSceneManager,
+                        SessionName = "TestSession"
+                    });
+                }
+                else
                 {
                     JoinLobbyTask().Forget();
                 }
@@ -78,7 +82,7 @@ namespace RPGGame.Model
             StartGameResult result = await _networkRunner.StartGame(new StartGameArgs
             {
                 GameMode = GameMode.Host,
-                // SceneManager = _mapLoader,
+                SceneManager = _networkSceneManager,
                 PlayerCount = 4
             });
 
@@ -92,7 +96,7 @@ namespace RPGGame.Model
             StartGameResult result = await _networkRunner.StartGame(new StartGameArgs
             {
                 GameMode = GameMode.Client,
-                // SceneManager = _mapLoader,
+                SceneManager = _networkSceneManager,
                 SessionName = sessionName
             });
 
@@ -115,6 +119,11 @@ namespace RPGGame.Model
             _players[playerRef] = player;
 
             PlayerSpawned?.Invoke(player);
+
+            if (_debugAutoconnect)
+            {
+                StartGame();
+            }
         }
 
         public void UpdatePlayer(Player player)
@@ -129,6 +138,13 @@ namespace RPGGame.Model
 
             return null;
         }
+
+        public void StartGame()
+        {
+            _networkRunner.SetActiveScene("BaseMap");
+        }
+
+#region INetworkRunnerCallbacks
 
         public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList)
         {
@@ -160,13 +176,31 @@ namespace RPGGame.Model
             PlayerLeft?.Invoke(playeRef);
         }
 
+        public void OnInput(NetworkRunner runner, NetworkInput input)
+        {
+            Vector3 moveDirection = default;
+
+            float x = Input.GetAxis("Horizontal");
+            float y = Input.GetAxis("Vertical");
+
+            moveDirection += x * Camera.main.transform.right;
+            moveDirection += y * Camera.main.transform.forward;
+            moveDirection.y = 0f;
+            moveDirection.Normalize();
+
+            _inputData.MoveDirection = moveDirection;
+            
+            input.Set(_inputData);
+
+            _inputData.MoveDirection = default;
+        }
+
         public void OnConnectedToServer(NetworkRunner runner) {}
         public void OnConnectFailed(NetworkRunner runner, NetAddress remoteAddress, NetConnectFailedReason reason) {}
         public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) {}
         public void OnCustomAuthenticationResponse(NetworkRunner runner, Dictionary<string, object> data) {}
         public void OnDisconnectedFromServer(NetworkRunner runner) {}
         public void OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken) {}
-        public void OnInput(NetworkRunner runner, NetworkInput input) {}
         public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input) {}
         public void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ArraySegment<byte> data) {}
         public void OnSceneLoadDone(NetworkRunner runner) {}
@@ -174,9 +208,7 @@ namespace RPGGame.Model
         public void OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason) {}
         public void OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message) {}
 
-        public struct Events
-        {
-            
-        }
+#endregion
+
     }
 }

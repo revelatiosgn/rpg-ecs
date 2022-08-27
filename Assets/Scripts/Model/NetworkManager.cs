@@ -21,6 +21,8 @@ namespace RPGGame.Model
 
 	    private InputData _inputData;
 
+        public NetworkRunner NetworkRunner => _networkRunner;
+
         private static NetworkManager _instance;
         public static NetworkManager Instance => _instance;
 
@@ -189,7 +191,7 @@ namespace RPGGame.Model
             moveDirection.Normalize();
 
             _inputData.MoveDirection = moveDirection;
-            
+
             input.Set(_inputData);
 
             _inputData.MoveDirection = default;

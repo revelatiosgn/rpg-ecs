@@ -10,8 +10,13 @@ namespace RPGGame.Gameplay
     public class PlayerCharacter : NetworkBehaviour
     {
         [SerializeField] private KCC _kcc;
+        public KCC KCC => _kcc;
+
         [SerializeField][Range(0f, 100f)] private float _speed = 5f;
+        public float Speed => _speed;
+
 	    [SerializeField][Range(0f, 100f)] private float _lookTurnRate = 1.5f;
+        public float LookTurnRate => _lookTurnRate;
 
         private static PlayerCharacter _local;
         public static PlayerCharacter Local => _local;

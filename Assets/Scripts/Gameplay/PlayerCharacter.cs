@@ -12,6 +12,8 @@ namespace RPGGame.Gameplay
         [SerializeField] private KCC _kcc;
         public KCC KCC => _kcc;
 
+        [SerializeField] private Animator _animator;
+
         [SerializeField][Range(0f, 100f)] private float _speed = 5f;
         public float Speed => _speed;
 
@@ -47,6 +49,8 @@ namespace RPGGame.Gameplay
                     _kcc.SetLookRotation(Quaternion.RotateTowards(transform.rotation, targetQ, _lookTurnRate * 360 * Runner.DeltaTime));
                 }
             }
+
+            _animator.SetFloat("MoveSpeed", _kcc.RenderData.RealSpeed);
         }
     }
 }

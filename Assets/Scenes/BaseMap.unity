@@ -672,7 +672,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e7d7420f5b552724797d8be8c49ceced, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _playerCharacterPrefab: {fileID: 7120867260277835845, guid: 2a875daa5a836ce4f83df69300513f59, type: 3}
+  _playerCharacterPrefab: {fileID: 4403031182110434084, guid: 937b3bcd8aad2644c9126fce972ec720, type: 3}
   _spawnRadius: 5
 --- !u!114 &1765028925
 MonoBehaviour:

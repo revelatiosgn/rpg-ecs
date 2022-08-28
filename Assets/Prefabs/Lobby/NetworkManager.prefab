@@ -61,7 +61,7 @@ MonoBehaviour:
   _networkRunner: {fileID: 1972452414627155051}
   _playerPrefab: {fileID: 5688752222874367496, guid: c31578b4052a4d5478f793dbd2872547, type: 3}
   _networkSceneManager: {fileID: 8236602991639211244}
-  _debugAutoconnect: 0
+  _debugAutoconnect: 1
 --- !u!114 &8236602991639211244
 MonoBehaviour:
   m_ObjectHideFlags: 0

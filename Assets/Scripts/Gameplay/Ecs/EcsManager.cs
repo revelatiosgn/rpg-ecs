@@ -33,10 +33,25 @@ namespace RPGGame.Gameplay.Ecs
             _networkSystems = new EcsSystems(_world, _sharedData);
 
             _updateSystems.ConvertScene();
+            _updateSystems
+                .Add(new AnimationSystem())
+                .Add(new InteractionSystem())
+                .Inject()
+                .Init();
 
             // _networkSystems
             //     .Inject()
             //     .Init();
+        }
+
+        private void Update()
+        {
+            _updateSystems.Run();
+        }
+
+        private void FixedUpdate()
+        {
+            _fixedUpdateSystems.Run();
         }
 
         public override void FixedUpdateNetwork()

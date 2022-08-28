@@ -122,7 +122,9 @@ MonoBehaviour:
     GroundSnapSpeed: 4
     StepHeight: 0.3
     StepSpeed: 1
-    Processors: []
+    Processors:
+    - {fileID: -3592675505127058418, guid: 93e6d39666b21fe4ea884554d8526c00, type: 3}
+    - {fileID: 6733955975318150615, guid: 0b1fae6ab34a6e0478cb92d6e1a62e44, type: 3}
 --- !u!114 &7590561381163725235
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -137,5 +139,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _interpolationDataSource: 0
   _kcc: {fileID: 8410269978598816486}
+  _animator: {fileID: 0}
   _speed: 5
   _lookTurnRate: 1.5

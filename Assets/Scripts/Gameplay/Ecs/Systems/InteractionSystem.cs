@@ -46,9 +46,10 @@ namespace RPGGame.Gameplay.Ecs
                     else
                     {
                         interactorData.Harvested += Time.deltaTime;
-                        if (interactorData.Harvested >= 1f)
+                        if (interactorData.Harvested >= 3f)
                         {
-                            Debug.Log("HARVESTED!");
+                            // Debug.Log("HARVESTED!");
+                            EcsManager.EventBus.RaiseEvent<TestEvent>(new TestEvent { ival = 3, message = "harvested" });
                             interactorData.Harvested = 0f;
                         }
                     }

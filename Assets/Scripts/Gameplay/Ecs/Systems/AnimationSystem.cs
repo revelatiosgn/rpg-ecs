@@ -10,6 +10,10 @@ namespace RPGGame.Gameplay.Ecs
     {
         public void Run(EcsSystems systems)
         {
+            foreach(TestEvent testEvent in EcsManager.EventBus.GetPool<TestEvent>())
+            {
+                Debug.Log($"AnimationSystem event {testEvent.message} : {testEvent.ival}");
+            }
         }
     }
 }

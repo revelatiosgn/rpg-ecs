@@ -15,12 +15,12 @@ namespace RPGGame.Gameplay
 	    [Networked(OnChanged = nameof(OnChangedAnimation))]
 	    public int AnimationHash { get; set; }
 
-        public void SetAnimation(int animationHash)
+        public void PlayAnimation(int animationHash)
         {
             AnimationHash = animationHash;
         }
 
-        public void SetAnimation(string animation)
+        public void PlayAnimation(string animation)
         {
             AnimationHash = Animator.StringToHash(animation);
         }

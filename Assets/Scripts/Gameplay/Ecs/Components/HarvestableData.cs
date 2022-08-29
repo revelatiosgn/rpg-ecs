@@ -4,8 +4,8 @@ using UnityEngine;
 
 namespace RPGGame.Gameplay.Ecs
 {
-    public struct InteractorData
+    public struct HarvestableData
     {
-        public Interactor Interactor;
+        public Harvestable Harvestable;
     }
 }

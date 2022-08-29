@@ -5,6 +5,8 @@ using UnityEngine;
 
 namespace RPGGame.Gameplay.Ecs
 {
+    public interface IEcsEvent {}
+
     public class EcsEventBus
     {
         private int _systemsCount;
@@ -17,9 +19,9 @@ namespace RPGGame.Gameplay.Ecs
 
         private Dictionary<Type, IEcsEventPool> _pools;
 
-        public void RaiseEvent<T>(T eventBody) where T : struct
+        public void RaiseEvent<T>(T eventBody) where T : IEcsEvent
         {
-            GetPool<T>().Add(eventBody);
+            GetEvents<T>().Add(eventBody);
         }
 
         public void Swallow()
@@ -33,7 +35,7 @@ namespace RPGGame.Gameplay.Ecs
             _pools.Clear();
         }
 
-        public EcsEventPool<T> GetPool<T>() where T : struct
+        public EcsEventPool<T> GetEvents<T>() where T : IEcsEvent
         {
             if (_pools.TryGetValue(typeof(T), out IEcsEventPool ipool))
                 return (EcsEventPool<T>) ipool;
@@ -50,7 +52,7 @@ namespace RPGGame.Gameplay.Ecs
         void Swallow();
     }
 
-    public class EcsEventPool<T> : IEcsEventPool, IEnumerable<T> where T : struct
+    public class EcsEventPool<T> : IEcsEventPool, IEnumerable<T> where T : IEcsEvent
     {
         internal const int DefaultPoolSize = 256;
 
@@ -133,22 +135,10 @@ namespace RPGGame.Gameplay.Ecs
             return GetEnumerator();
         }
 
-        private struct EventItem<V> where V : struct
+        private struct EventItem<V> where V : IEcsEvent
         {
             public V Body;
             public int Counter;
-        }
-
-        public override string ToString()
-        {
-            string result = "";
-            
-            foreach (int q in _eventsQueue)
-            {
-                result += $"{_events[q].Counter} {_events[q].Body.ToString()} / ";
-            }
-
-            return result;
         }
     }
 }

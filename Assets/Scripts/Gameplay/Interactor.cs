@@ -12,14 +12,14 @@ namespace RPGGame.Gameplay
         [SerializeField] private TriggerEvent _triggerEvent;
         [SerializeField] private LayerMask _layerMask;
 
-        [Networked, Capacity(100)]
-        public NetworkLinkedList<NetworkId> Interactables => default;
+        [Networked, Capacity(100), UnitySerializeField]
+        public NetworkDictionary<NetworkId, Interactable> Interactables => default;
 
-        [Networked(OnChanged = nameof(OnChangedCurrentInteractable))]
-        public NetworkId CurrentInteractable { get; set; }
+        public Interactable IntendedInteractable;
+        public Interactable TargetInteractable;
 
-        private Interactable _interactTarget;
-        public Interactable InteractTarget => _interactTarget;
+        [Networked(OnChanged = nameof(OnChangedTargetInteractableId))]
+        public NetworkId TargetInteractableId { get; set; }
 
         private void OnEnable()
         {
@@ -43,11 +43,10 @@ namespace RPGGame.Gameplay
                     if (Physics.Raycast(ray, out RaycastHit hit, 100f, _layerMask))
                     {
                         InteractableCollider collider = hit.collider.GetComponent<InteractableCollider>();
-                        Interactable interactable = collider.Interactable;
-                        if (Interactables.Contains(interactable.Object.Id))
+                        Interactable target = collider.Interactable;
+                        if (Interactables.TryGet(target.Object.Id, out Interactable interactable))
                         {
-                            // Debug.Log("Call Interact RPC");
-                            RPC_Interact(interactable.Object.Id);
+                            RPC_IntendInteract(interactable.Object.Id);
                         }
                     }
                 }
@@ -55,25 +54,29 @@ namespace RPGGame.Gameplay
         }
         
         [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
-        private void RPC_Interact(NetworkId networkId)
+        private void RPC_IntendInteract(NetworkId networkId)
         {
             if (Object.HasStateAuthority)
             {
-                Interactable interactable = Interactable.GetInteractable(networkId);
-                _interactTarget = interactable;
-                Debug.Log($"RPC_Interact {NetworkManager.Instance.GetPlayer(Object.InputAuthority).Nickname} with {interactable.gameObject.name}");
+                if (Interactables.TryGet(networkId, out Interactable interactable))
+                {
+                    IntendedInteractable = interactable;
+                    Debug.Log($"RPC_IntendInteract {NetworkManager.Instance.GetPlayer(Object.InputAuthority).Nickname} with {IntendedInteractable.gameObject.name}");
+                }
             }
         }
 
-        private static void OnChangedCurrentInteractable(Changed<Interactor> changed)
+        private static void OnChangedTargetInteractableId(Changed<Interactor> changed)
         {
-
-        }
-
-        public void ResetTarget()
-        {
-            _interactTarget = null;
-            CurrentInteractable = default;
+            Interactor interactor = changed.Behaviour;
+            if (interactor.Interactables.TryGet(interactor.TargetInteractableId, out Interactable interactable))
+            {
+                interactor.TargetInteractable = interactable;
+            }
+            else
+            {
+                interactor.TargetInteractable = null;
+            }
         }
 
         private void TriggerEnter(Collider collider)
@@ -81,7 +84,7 @@ namespace RPGGame.Gameplay
             if (collider.TryGetComponent<Interactable>(out Interactable interactable))
             {
                 if (Object.HasStateAuthority)
-                    Interactables.Add(interactable.Object.Id);
+                    Interactables.Set(interactable.Object.Id, interactable);
 
                 if (Object.HasInputAuthority)
                     interactable.SetUiActive(true);

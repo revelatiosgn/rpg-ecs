@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using Leopotam.EcsLite;
 using Leopotam.EcsLite.Di;
 using UnityEngine;
+using Voody.UniLeo.Lite;
 
 namespace RPGGame.Gameplay.Ecs
 {
     public class InteractionSystem : IEcsRunSystem
     {
-        private readonly EcsFilterInject<Inc<InteractorData, TransformData, KCCData, AnimationData>> _filter = default;
+        private readonly EcsFilterInject<Inc<InteractorData, TransformData, KCCData, AnimationData>> _interactorFilter = default;
 
         private readonly EcsPoolInject<InteractorData> _interactorPool = default;
         private readonly EcsPoolInject<TransformData> _transformPool = default;
@@ -16,20 +17,97 @@ namespace RPGGame.Gameplay.Ecs
         private readonly EcsPoolInject<AnimationData> _animationPool = default;
         
         private int _moveHash = Animator.StringToHash("Move");
-        private int _slashHash = Animator.StringToHash("Slash");
 
         public void Run(EcsSystems systems)
         {
-            foreach (int entity in _filter.Value)
+            foreach (int entity in _interactorFilter.Value)
             {
                 ref InteractorData interactorData = ref _interactorPool.Value.Get(entity);
                 ref TransformData transformData = ref _transformPool.Value.Get(entity);
                 ref KCCData kccData = ref _kccPool.Value.Get(entity);
                 ref AnimationData animationData = ref _animationPool.Value.Get(entity);
 
-                Interactable target = interactorData.Interactor.InteractTarget;
+                Interactable intendedInteractable = interactorData.Interactor.IntendedInteractable;
+                if (intendedInteractable != null)
+                {
+                    if (intendedInteractable.Object.Id != interactorData.Interactor.TargetInteractableId)
+                    {
+                        if (interactorData.Interactor.Interactables.TryGet(intendedInteractable.Object.Id, out Interactable newTarget))
+                        {
+                            Interactable oldTarget = interactorData.Interactor.TargetInteractable;
 
-                if (target != null)
+                            if (TryGetEntity(oldTarget, out int oldEntity))
+                            {
+                                // end interact
+                                interactorData.Interactor.IntendedInteractable = null;
+                                interactorData.Interactor.TargetInteractable = null;
+                                interactorData.Interactor.TargetInteractableId = default;
+                                EcsManager.EventBus.RaiseEvent<OnInteractEnd>(new OnInteractEnd { InteractorEntity = entity, InteractableEntity = oldEntity });
+
+                                _animationPool.Value.Get(entity).CharacterAnimation.PlayAnimation(_moveHash);
+                            }
+
+                            if (TryGetEntity(newTarget, out int newEntity))
+                            {
+                                // begin interact
+                                interactorData.Interactor.IntendedInteractable = null;
+                                interactorData.Interactor.TargetInteractable = newTarget;
+                                interactorData.Interactor.TargetInteractableId = newTarget.Object.Id;
+                                EcsManager.EventBus.RaiseEvent<OnInteractBegin>(new OnInteractBegin { InteractorEntity = entity, InteractableEntity = newEntity });
+                            }
+                        }
+                    }
+                }
+
+                Interactable targetInteractable = interactorData.Interactor.TargetInteractable;
+                if (targetInteractable != null)
+                {
+                    if (kccData.KCC.RenderData.RealSpeed > float.Epsilon)
+                    {
+                        Interactable oldTarget = interactorData.Interactor.TargetInteractable;
+                        if (TryGetEntity(oldTarget, out int oldEntity))
+                        {
+                            // end interact
+                            interactorData.Interactor.IntendedInteractable = null;
+                            interactorData.Interactor.TargetInteractable = null;
+                            interactorData.Interactor.TargetInteractableId = default;
+                            EcsManager.EventBus.RaiseEvent<OnInteractEnd>(new OnInteractEnd { InteractorEntity = entity, InteractableEntity = oldEntity });
+
+                            _animationPool.Value.Get(entity).CharacterAnimation.PlayAnimation(_moveHash);
+                        }
+                    }
+                    else
+                    {
+                        Vector3 direction = targetInteractable.transform.position - transformData.Transform.position;
+                        kccData.KCC.SetLookRotation(Quaternion.LookRotation(direction, Vector3.up));
+                    }
+                }
+            }
+        }
+
+        private bool TryGetEntity(MonoBehaviour monoBehaviour, out int entity)
+        {
+            entity = -1;
+
+            if (monoBehaviour == null)
+                return false;
+
+            if (monoBehaviour.TryGetComponent<ConvertToEntity>(out ConvertToEntity convertToEntity))
+            {
+                if (convertToEntity.TryGetEntity(out int result, out EcsWorld world))
+                {
+                    entity = result;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+}
+
+/*
+if (target != null)
                 {
                     if (kccData.KCC.RenderData.RealSpeed > float.Epsilon)
                     {
@@ -62,9 +140,6 @@ namespace RPGGame.Gameplay.Ecs
                 {
                     animationData.CharacterAnimation.SetAnimation(_moveHash);
                 }
-            }
-        }
-    }
-}
+                */
 
 

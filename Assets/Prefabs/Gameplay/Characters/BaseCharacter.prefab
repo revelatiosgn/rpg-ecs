@@ -245,6 +245,10 @@ MonoBehaviour:
   _layerMask:
     serializedVersion: 2
     m_Bits: 256
+  IntendedInteractable: {fileID: 0}
+  TargetInteractable: {fileID: 0}
+  _Interactables:
+    _items: []
 --- !u!114 &1556794844909863682
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -272,7 +276,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 236f59dc59fdd4c8a846a7fc5bb735ba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  convertMode: 0
+  convertMode: 2
   customWorld: 
 --- !u!114 &1348500005054336636
 MonoBehaviour:

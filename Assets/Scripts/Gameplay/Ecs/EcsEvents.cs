@@ -4,15 +4,16 @@ using System.Collections.Generic;
 
 namespace RPGGame.Gameplay.Ecs
 {
-    struct TestEvent
+    public struct OnInteractBegin : IEcsEvent
     {
-        public int ival;
-        public string message;
+        public int InteractorEntity;
+        public int InteractableEntity;
+    }
 
-        public override string ToString()
-        {
-            return $"Event: {ival} {message}";
-        }
+    public struct OnInteractEnd : IEcsEvent
+    {
+        public int InteractorEntity;
+        public int InteractableEntity;
     }
 }
 

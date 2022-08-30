@@ -15,6 +15,9 @@ namespace RPGGame.Gameplay.Ecs
         private EcsSystems _systems;
         private EcsSharedData _sharedData;
 
+        private static NetworkRunner _networkRunner;
+        public static NetworkRunner NetworkRunner => _networkRunner;
+
         private static EcsEventBus _eventBus;
         public static EcsEventBus EventBus => _eventBus;
 
@@ -30,7 +33,6 @@ namespace RPGGame.Gameplay.Ecs
         {
             _world = new EcsWorld();
             _sharedData = new EcsSharedData();
-
             _systems = new EcsSystems(_world, _sharedData);
 
             _systems.ConvertScene();
@@ -42,10 +44,15 @@ namespace RPGGame.Gameplay.Ecs
                 .Init();
 
             _systems.GetRunSystems(ref _runSystems);
-            _eventBus = new EcsEventBus(_runSystems.Length);
+            _eventBus = new EcsEventBus(_runSystems.Length);   
         }
 
-        private void Update()
+        public override void Spawned()
+        {
+            _networkRunner = Runner;
+        }
+
+        public override void FixedUpdateNetwork()
         {
             if (NetworkManager.Instance.NetworkRunner.IsServer)
             {

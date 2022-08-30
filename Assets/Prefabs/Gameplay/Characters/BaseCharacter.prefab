@@ -121,11 +121,13 @@ GameObject:
   - component: {fileID: 7590561381163725235}
   - component: {fileID: 723071979974082843}
   - component: {fileID: 1556794844909863682}
+  - component: {fileID: -7283534134028488346}
   - component: {fileID: 802473114296524026}
   - component: {fileID: 1348500005054336636}
   - component: {fileID: 6771943700558155337}
   - component: {fileID: 5683851092283858490}
   - component: {fileID: 9068124035282974053}
+  - component: {fileID: -5922872139992240029}
   m_Layer: 0
   m_Name: BaseCharacter
   m_TagString: Untagged
@@ -176,6 +178,7 @@ MonoBehaviour:
   - {fileID: 7590561381163725235}
   - {fileID: 723071979974082843}
   - {fileID: 1556794844909863682}
+  - {fileID: -7283534134028488346}
   SimulationBehaviours: []
 --- !u!114 &8410269978598816486
 MonoBehaviour:
@@ -264,6 +267,22 @@ MonoBehaviour:
   _interpolationDataSource: 0
   _animator: {fileID: 0}
   _AnimationHash: 0
+--- !u!114 &-7283534134028488346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8410269978598816485}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4bea4dbbc805e9f4f8842080a949339e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _interpolationDataSource: 0
+  _gameplayEvents: {fileID: 11400000, guid: f2ed31ee1df734044b438fa4aad5e82e, type: 2}
+  _Items:
+    _items: []
 --- !u!114 &802473114296524026
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -330,3 +349,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _kcc: {fileID: 8410269978598816486}
+--- !u!114 &-5922872139992240029
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8410269978598816485}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f614ff0430467848b714b8e7d75e26a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _inventory: {fileID: -7283534134028488346}

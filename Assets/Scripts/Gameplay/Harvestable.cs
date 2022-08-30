@@ -9,6 +9,8 @@ namespace RPGGame.Gameplay
 {
     public class Harvestable : NetworkBehaviour
     {
+        [SerializeField] private InventoryItemConfig _harvestItem;
+        public InventoryItemConfig HarvestItem => _harvestItem;
     }
 }
 

@@ -15,8 +15,13 @@ namespace RPGGame.Model
         {
             public static class Player
             {
-                public static readonly string Nickname = "Player.Nickname";
+                public const string Nickname = "Player.Nickname";
             }
+        }
+
+        public static class Player
+        {
+            public const int InventorySlots = 64;
         }
     }
 }

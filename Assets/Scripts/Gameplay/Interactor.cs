@@ -68,15 +68,15 @@ namespace RPGGame.Gameplay
 
         private static void OnChangedTargetInteractableId(Changed<Interactor> changed)
         {
-            Interactor interactor = changed.Behaviour;
-            if (interactor.Interactables.TryGet(interactor.TargetInteractableId, out Interactable interactable))
-            {
-                interactor.TargetInteractable = interactable;
-            }
-            else
-            {
-                interactor.TargetInteractable = null;
-            }
+            // Interactor interactor = changed.Behaviour;
+            // if (interactor.Interactables.TryGet(interactor.TargetInteractableId, out Interactable interactable))
+            // {
+            //     interactor.TargetInteractable = interactable;
+            // }
+            // else
+            // {
+            //     interactor.TargetInteractable = null;
+            // }
         }
 
         private void TriggerEnter(Collider collider)

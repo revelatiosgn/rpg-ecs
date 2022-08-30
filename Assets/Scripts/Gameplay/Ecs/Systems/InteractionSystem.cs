@@ -30,7 +30,11 @@ namespace RPGGame.Gameplay.Ecs
                 Interactable intendedInteractable = interactorData.Interactor.IntendedInteractable;
                 if (intendedInteractable != null)
                 {
-                    if (intendedInteractable.Object.Id != interactorData.Interactor.TargetInteractableId)
+                    if (kccData.KCC.RenderData.RealSpeed > float.Epsilon)
+                    {
+                        interactorData.Interactor.IntendedInteractable = null;
+                    }
+                    else if (intendedInteractable.Object.Id != interactorData.Interactor.TargetInteractableId)
                     {
                         if (interactorData.Interactor.Interactables.TryGet(intendedInteractable.Object.Id, out Interactable newTarget))
                         {
@@ -64,9 +68,11 @@ namespace RPGGame.Gameplay.Ecs
                 {
                     if (kccData.KCC.RenderData.RealSpeed > float.Epsilon)
                     {
+                        Debug.Log("Start moving");
                         Interactable oldTarget = interactorData.Interactor.TargetInteractable;
                         if (TryGetEntity(oldTarget, out int oldEntity))
                         {
+                            Debug.Log("End interact");
                             // end interact
                             interactorData.Interactor.IntendedInteractable = null;
                             interactorData.Interactor.TargetInteractable = null;

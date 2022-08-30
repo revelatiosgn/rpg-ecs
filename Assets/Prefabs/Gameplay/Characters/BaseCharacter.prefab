@@ -122,6 +122,7 @@ GameObject:
   - component: {fileID: 723071979974082843}
   - component: {fileID: 1556794844909863682}
   - component: {fileID: -7283534134028488346}
+  - component: {fileID: -7284389899716528601}
   - component: {fileID: 802473114296524026}
   - component: {fileID: 1348500005054336636}
   - component: {fileID: 6771943700558155337}
@@ -179,6 +180,7 @@ MonoBehaviour:
   - {fileID: 723071979974082843}
   - {fileID: 1556794844909863682}
   - {fileID: -7283534134028488346}
+  - {fileID: -7284389899716528601}
   SimulationBehaviours: []
 --- !u!114 &8410269978598816486
 MonoBehaviour:
@@ -283,6 +285,23 @@ MonoBehaviour:
   _gameplayEvents: {fileID: 11400000, guid: f2ed31ee1df734044b438fa4aad5e82e, type: 2}
   _Items:
     _items: []
+--- !u!114 &-7284389899716528601
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8410269978598816485}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1b9f131770ff2d43a968635c54ab4db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _interpolationDataSource: 0
+  _WorkbenchId:
+    _length: 1
+    _data:
+      Data: 3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 --- !u!114 &802473114296524026
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -68,30 +68,6 @@ namespace RPGGame.Gameplay.Ecs
                     items.Set(itemConfig.ID, count);
                 }
             }
-
-            // foreach (OnInteractBegin onInteractBegin in EcsManager.EventBus.GetEvents<OnInteractBegin>())
-            // {
-            //     Debug.Log($"begin {onInteractBegin.InteractorEntity} {onInteractBegin.InteractableEntity}");
-
-            //     if (_harvestablePool.Value.Has(onInteractBegin.InteractableEntity))
-            //     {
-            //         if (_harvestablePool.Value.Has(onInteractBegin.InteractableEntity))
-            //             _harvesterPool.Value.Get(onInteractBegin.InteractorEntity).HarvestProgress = 0f;
-
-            //         _animationPool.Value.Get(onInteractBegin.InteractorEntity).CharacterAnimation.PlayAnimation(_slashHash);
-            //     }
-            // }
-
-            // foreach (OnInteractEnd onInteractEnd in EcsManager.EventBus.GetEvents<OnInteractEnd>())
-            // {
-            //     Debug.Log($"end {onInteractEnd.InteractorEntity}");
-
-            //     if (_harvesterPool.Value.Has(onInteractEnd.InteractorEntity))
-            //     {
-            //         if (_harvestablePool.Value.Has(onInteractEnd.InteractableEntity))
-            //             _harvesterPool.Value.Get(onInteractEnd.InteractorEntity).HarvestProgress = 0f;
-            //     }
-            // }
         }
     }
 }

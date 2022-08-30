@@ -12,7 +12,7 @@ namespace RPGGame.Gameplay
     public class Inventory : NetworkBehaviour
     {
         [Networked(OnChanged = nameof(OnInventoryChanged)), Capacity(64)]
-        public NetworkDictionary<NetworkString<_32>, int> Items => default;
+        public NetworkDictionary<NetworkString<_32>, int> Items => default; // <itemid, count>
 
         [SerializeField] private GameplayEvents _gameplayEvents;
 

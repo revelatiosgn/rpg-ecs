@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d30cb5301503a4b4791f326bb3524455, type: 3}
+  m_Name: stone_axe
+  m_EditorClassIdentifier: 
+  _id: 17e328b9d0643e64f88474f4816d69a2
+  _name: Stone axe
+  _icon: {fileID: 21300000, guid: 31a8966010455484db6a1140529d2af0, type: 3}

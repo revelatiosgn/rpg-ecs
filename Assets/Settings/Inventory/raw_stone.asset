@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d30cb5301503a4b4791f326bb3524455, type: 3}
-  m_Name: Log
+  m_Name: raw_stone
   m_EditorClassIdentifier: 
-  _id: 043bd644a114cda49a45acccae055668
-  _name: Log
-  _icon: {fileID: 21300000, guid: 9d94e92ca9190fc47a371c73e78f9a2b, type: 3}
+  _id: 791f363ec22e97149bdb2f3be1d46241
+  _name: Stone
+  _icon: {fileID: 21300000, guid: 245c853b28445a24d97bf74982d42cba, type: 3}

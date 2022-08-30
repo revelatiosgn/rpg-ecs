@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06a603fbb838d7c40a3bcd89cd2b2426, type: 3}
+  m_Name: Workbenches
+  m_EditorClassIdentifier: 
+  _items:
+  - {fileID: 11400000, guid: eb1d55972ef0e0445aa859a8ef350ca6, type: 2}
+  - {fileID: 11400000, guid: fc935b1f158e76340a78e50b5a339cb6, type: 2}
+  - {fileID: 11400000, guid: 1096f971256a7c44899250ef2092b8ae, type: 2}

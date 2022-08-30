@@ -17,6 +17,7 @@ namespace RPGGame.Gameplay.Ecs
 
         private static NetworkRunner _networkRunner;
         public static NetworkRunner NetworkRunner => _networkRunner;
+        public static float DeltaTime => _networkRunner.DeltaTime;
 
         private static EcsEventBus _eventBus;
         public static EcsEventBus EventBus => _eventBus;

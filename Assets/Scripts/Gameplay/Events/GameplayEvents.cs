@@ -10,5 +10,7 @@ namespace RPGGame.Gameplay.Events
     public class GameplayEvents : BaseEvents
     {
         public Action<NetworkDictionary<NetworkString<_32>, int>> OnInventoryChanged;
+        public Action<NetworkString<_32>> OnWorkbench;
+        public Action<float> OnCraftProgressChanged;
     }
 }

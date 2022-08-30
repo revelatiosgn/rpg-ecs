@@ -4,6 +4,7 @@ using Fusion;
 using Fusion.KCC;
 using RPGGame.Model;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace RPGGame.Gameplay
 {
@@ -37,8 +38,9 @@ namespace RPGGame.Gameplay
         {
             if (Object.HasInputAuthority)
             {
-                if (Input.GetMouseButtonDown(0))
+                if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
                 {
+                    Debug.Log("do raycast");
                     Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
                     if (Physics.Raycast(ray, out RaycastHit hit, 100f, _layerMask))
                     {
@@ -54,11 +56,11 @@ namespace RPGGame.Gameplay
         }
         
         [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
-        private void RPC_IntendInteract(NetworkId networkId)
+        private void RPC_IntendInteract(NetworkId interactableId)
         {
             if (Object.HasStateAuthority)
             {
-                if (Interactables.TryGet(networkId, out Interactable interactable))
+                if (Interactables.TryGet(interactableId, out Interactable interactable))
                 {
                     IntendedInteractable = interactable;
                     Debug.Log($"RPC_IntendInteract {NetworkManager.Instance.GetPlayer(Object.InputAuthority).Nickname} with {IntendedInteractable.gameObject.name}");
@@ -66,17 +68,34 @@ namespace RPGGame.Gameplay
             }
         }
 
+        public void InterruptInteract()
+        {
+            if (Object.HasInputAuthority)
+            {
+                RPC_InterruptInteract();
+            }
+        }
+        
+        [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+        private void RPC_InterruptInteract()
+        {
+            if (Object.HasStateAuthority)
+            {
+                IntendedInteractable = null;
+            }
+        }
+
         private static void OnChangedTargetInteractableId(Changed<Interactor> changed)
         {
-            // Interactor interactor = changed.Behaviour;
-            // if (interactor.Interactables.TryGet(interactor.TargetInteractableId, out Interactable interactable))
-            // {
-            //     interactor.TargetInteractable = interactable;
-            // }
-            // else
-            // {
-            //     interactor.TargetInteractable = null;
-            // }
+            Interactor interactor = changed.Behaviour;
+            if (interactor.Interactables.TryGet(interactor.TargetInteractableId, out Interactable interactable))
+            {
+                interactor.TargetInteractable = interactable;
+            }
+            else
+            {
+                interactor.TargetInteractable = null;
+            }
         }
 
         private void TriggerEnter(Collider collider)

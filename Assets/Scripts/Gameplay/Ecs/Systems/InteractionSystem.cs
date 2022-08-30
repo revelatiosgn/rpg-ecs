@@ -54,11 +54,28 @@ namespace RPGGame.Gameplay.Ecs
                             if (TryGetEntity(newTarget, out int newEntity))
                             {
                                 // begin interact
-                                interactorData.Interactor.IntendedInteractable = null;
                                 interactorData.Interactor.TargetInteractable = newTarget;
                                 interactorData.Interactor.TargetInteractableId = newTarget.Object.Id;
                                 EcsManager.EventBus.RaiseEvent<OnInteractBegin>(new OnInteractBegin { InteractorEntity = entity, InteractableEntity = newEntity });
                             }
+                        }
+                    }
+                }
+                else
+                {
+                    if (interactorData.Interactor.TargetInteractable != null)
+                    {
+                        Interactable oldTarget = interactorData.Interactor.TargetInteractable;
+                        
+                        if (TryGetEntity(oldTarget, out int oldEntity))
+                        {
+                            // end interact
+                            interactorData.Interactor.IntendedInteractable = null;
+                            interactorData.Interactor.TargetInteractable = null;
+                            interactorData.Interactor.TargetInteractableId = default;
+                            EcsManager.EventBus.RaiseEvent<OnInteractEnd>(new OnInteractEnd { InteractorEntity = entity, InteractableEntity = oldEntity });
+
+                            _animationPool.Value.Get(entity).CharacterAnimation.PlayAnimation(_moveHash);
                         }
                     }
                 }

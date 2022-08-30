@@ -9,13 +9,10 @@ using UnityEngine;
 namespace RPGGame.Gameplay
 {
     [CreateAssetMenu(menuName = "RPG/Craft/WorkbenchConfig")]
-    public class WorkbenchConfig : ScriptableObject
+    public class WorkbenchConfig : ItemConfig
     {
-        [UniqueIdentifier][SerializeField] string _id;
-        public string ID => _id;
-
-        [SerializeField] private string _name;
-        public string Name => _name;
+        [SerializeField] private List<CraftRecipeConfig> _recipes;
+        public List<CraftRecipeConfig> Recipes => _recipes;
     }
 }
 

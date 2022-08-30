@@ -17,15 +17,38 @@ namespace RPGGame.UiControllers
         [SerializeField] private Image _icon;
         [SerializeField] private TMP_Text _count;
 
+        private InventoryItemConfig _itemConfig;
+        public InventoryItemConfig ItemConfig => _itemConfig;
+
         private void Awake()
         {
             Hide();
         }
 
-        public void Initialize(InventoryItemConfig item, int count)
+        public void Initialize(InventoryItemConfig itemConfig)
         {
-            _icon.sprite = item.Icon;
+            _itemConfig = itemConfig;
+            _icon.sprite = _itemConfig.Icon;
+            _count.gameObject.SetActive(false);
+
+            Show();
+        }
+
+        public void Initialize(InventoryItemConfig itemConfig, int count)
+        {
+            _itemConfig = itemConfig;
+            _icon.sprite = _itemConfig.Icon;
             _count.text = count.ToString();
+
+            Show();
+        }
+
+        public void Initialize(InventoryItemConfig itemConfig, string count, Color countColor)
+        {
+            _itemConfig = itemConfig;
+            _icon.sprite = _itemConfig.Icon;
+            _count.text = count;
+            _count.color = countColor;
 
             Show();
         }

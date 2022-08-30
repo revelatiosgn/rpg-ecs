@@ -18,7 +18,8 @@ namespace RPGGame.Gameplay
 
         private static void OnInventoryChanged(Changed<Inventory> changed)
         {
-            changed.Behaviour._gameplayEvents.OnInventoryChanged?.Invoke(changed.Behaviour.Items);
+            if (changed.Behaviour.HasInputAuthority)
+                changed.Behaviour._gameplayEvents.OnInventoryChanged?.Invoke(changed.Behaviour.Items);
         }
     }
 }

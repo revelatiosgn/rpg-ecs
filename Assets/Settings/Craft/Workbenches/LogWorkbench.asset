@@ -14,3 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _id: eb1d55972ef0e0445aa859a8ef350ca6
   _name: Log Workbench
+  _recipes:
+  - {fileID: 11400000, guid: a9bb25c884f29e64abe7f12e701b9936, type: 2}
+  - {fileID: 11400000, guid: 53d6a8651a327ba4ea46e642f39c3bbc, type: 2}
+  - {fileID: 11400000, guid: 3ecd27cfde7a95d4fa2a542824b09ec4, type: 2}

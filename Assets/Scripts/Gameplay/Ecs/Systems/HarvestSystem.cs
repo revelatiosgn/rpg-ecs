@@ -20,6 +20,18 @@ namespace RPGGame.Gameplay.Ecs
 
         public void Run(EcsSystems systems)
         {
+            foreach (OnInteractEnd onInteractEnd in EcsManager.EventBus.GetEvents<OnInteractEnd>())
+            {
+                int interactor = onInteractEnd.InteractorEntity;
+                int interactable = onInteractEnd.InteractableEntity;
+
+                if (_harvesterPool.Value.Has(interactor))
+                {
+                    Debug.Log("del harvester");
+                    _harvesterPool.Value.Del(interactor);
+                }
+            }
+
             foreach (OnInteractBegin onInteractBegin in EcsManager.EventBus.GetEvents<OnInteractBegin>())
             {
                 int interactor = onInteractBegin.InteractorEntity;
@@ -37,18 +49,6 @@ namespace RPGGame.Gameplay.Ecs
                 }
             }
 
-            foreach (OnInteractEnd onInteractEnd in EcsManager.EventBus.GetEvents<OnInteractEnd>())
-            {
-                int interactor = onInteractEnd.InteractorEntity;
-                int interactable = onInteractEnd.InteractableEntity;
-
-                if (_harvesterPool.Value.Has(interactor))
-                {
-                    Debug.Log("del harvester");
-                    _harvesterPool.Value.Del(interactor);
-                }
-            }
-
             foreach (int harvesterEntity in _harvesterFilter.Value)
             {
                 ref HarvesterData harvesterData = ref _harvesterPool.Value.Get(harvesterEntity);
@@ -62,6 +62,8 @@ namespace RPGGame.Gameplay.Ecs
                     InventoryItemConfig itemConfig = harvestableData.Harvestable.HarvestItem;
 
                     NetworkDictionary<NetworkString<_32>, int> items = _inventoryPool.Value.Get(harvesterEntity).Inventory.Items;
+
+                    Debug.Log($"HARVESTED {itemConfig.Name}");
 
                     items.TryGet(itemConfig.ID, out int count);
                     count++;

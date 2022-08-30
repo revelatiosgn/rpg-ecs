@@ -7,5 +7,6 @@ namespace RPGGame.Gameplay.Ecs
     public struct CrafterData
     {
         public Crafter Crafter;
+        public float CraftRate;
     }
 }

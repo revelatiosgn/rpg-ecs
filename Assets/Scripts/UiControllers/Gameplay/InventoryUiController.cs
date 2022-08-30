@@ -69,6 +69,7 @@ namespace RPGGame.UiControllers
 
             foreach (var item in items)
             {
+                Debug.Log($"FILL {_itemsConfig.GetItem(item.Key.Value).Name}");
                 _slots[index].Initialize(_itemsConfig.GetItem(item.Key.Value), item.Value);
                 index++;
             }

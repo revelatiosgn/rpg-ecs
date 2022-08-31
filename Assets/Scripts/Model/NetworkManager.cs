@@ -35,8 +35,8 @@ namespace RPGGame.Model
         public event Action<List<SessionInfo>> SessionListUpdated;
         public event Action<PlayerRef> PlayerJoined;
         public event Action<PlayerRef> PlayerLeft;
-        public event Action<Player> PlayerSpawned;
-        public event Action<Player> PlayerDespawned;
+        public event Action<PlayerRef, Player> PlayerSpawned;
+        public event Action<PlayerRef, Player> PlayerDespawned;
         public event Action<Player> PlayerUpdated;
         public event Action LeaveSessionStarted;
 
@@ -85,7 +85,7 @@ namespace RPGGame.Model
             {
                 GameMode = GameMode.Host,
                 SceneManager = _networkSceneManager,
-                PlayerCount = 4
+                PlayerCount = Constants.Server.MaxPlayers
             });
 
             CreateSessionCompleted?.Invoke(result);
@@ -120,7 +120,7 @@ namespace RPGGame.Model
 
             _players[playerRef] = player;
 
-            PlayerSpawned?.Invoke(player);
+            PlayerSpawned?.Invoke(playerRef, player);
 
             if (_debugAutoconnect)
             {
@@ -163,19 +163,19 @@ namespace RPGGame.Model
             PlayerJoined?.Invoke(playerRef);
         }
 
-        public void OnPlayerLeft(NetworkRunner runner, PlayerRef playeRef)
+        public void OnPlayerLeft(NetworkRunner runner, PlayerRef playerRef)
         {
-            if (_players.TryGetValue(playeRef, out Player player))
+            if (_players.TryGetValue(playerRef, out Player player))
 		    {
                 runner.Despawn(player.Object);
             }
 
-            _players.Remove(playeRef);
+            _players.Remove(playerRef);
 
             if (player != null)
-                PlayerDespawned?.Invoke(player);
+                PlayerDespawned?.Invoke(playerRef, player);
 
-            PlayerLeft?.Invoke(playeRef);
+            PlayerLeft?.Invoke(playerRef);
         }
 
         public void OnInput(NetworkRunner runner, NetworkInput input)

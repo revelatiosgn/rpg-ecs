@@ -52,12 +52,12 @@ namespace RPGGame.UiControllers
             NetworkManager.Instance.StartGame();
         }
 
-        private void PlayerSpawned(Player player)
+        private void PlayerSpawned(PlayerRef playerRef, Player player)
         {
             UpdatePlayersList();
         }
 
-        private void PlayerDespawned(Player player)
+        private void PlayerDespawned(PlayerRef playerRef, Player player)
         {
             UpdatePlayersList();
         }

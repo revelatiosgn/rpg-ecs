@@ -19,6 +19,11 @@ namespace RPGGame.Model
             }
         }
 
+        public static class Server
+        {
+            public const int MaxPlayers = 16;
+        }
+
         public static class Player
         {
             public const int InventorySlots = 64;

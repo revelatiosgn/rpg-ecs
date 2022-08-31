@@ -58,15 +58,15 @@ namespace Fusion.KCC
 			}
 		}
 
-		public void ToggleConvexMeshes(bool convex)
+		public void ToggleConvexMeshColliders(bool convex)
 		{
 			KCCOverlapHit hit;
 
-			for (int i = 0; i < AllHitCount; ++i)
+			for (int i = 0; i < ColliderHitCount; ++i)
 			{
-				hit = AllHits[i];
+				hit = ColliderHits[i];
 
-				if (hit.Type == EColliderType.Mesh && hit.IsConvex == true)
+				if (hit.Type == EColliderType.Mesh && hit.IsConvertible == true)
 				{
 					((MeshCollider)hit.Collider).convex = convex;
 				}

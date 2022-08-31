@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7584712212755254874}
   - component: {fileID: -1029249225945322823}
+  - component: {fileID: 293761205225825258}
   - component: {fileID: -7249668425509915431}
   m_Layer: 0
   m_Name: KCC
@@ -56,6 +57,22 @@ MonoBehaviour:
   NetworkedBehaviours:
   - {fileID: -7249668425509915431}
   SimulationBehaviours: []
+--- !u!54 &293761205225825258
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3467749930922983645}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 126
+  m_CollisionDetection: 0
 --- !u!114 &-7249668425509915431
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -81,8 +98,12 @@ MonoBehaviour:
       serializedVersion: 2
       m_Bits: 1
     RenderBehavior: 1
+    Features: -1
     SpawnColliderOnProxy: 1
     AllowClientTeleports: 0
+    TeleportThreshold: 1
+    CCDRadiusMultiplier: 0.75
+    AntiJitterDistance: {x: 0, y: 0}
     GroundSnapDistance: 0.25
     GroundSnapSpeed: 4
     StepHeight: 0.3
@@ -90,3 +111,14 @@ MonoBehaviour:
     Processors:
     - {fileID: 6733955975318150615, guid: 0b1fae6ab34a6e0478cb92d6e1a62e44, type: 3}
     - {fileID: -3592675505127058418, guid: 93e6d39666b21fe4ea884554d8526c00, type: 3}
+    PositionAccuracy:
+      _value: 0.0001
+      _inverse: 0
+      _hash: -194233199
+    RotationAccuracy:
+      _value: 0.0001
+      _inverse: 0
+      _hash: -258202764
+    MaxNetworkedCollisions: 4
+    MaxNetworkedModifiers: 4
+    MaxNetworkedIgnores: 4

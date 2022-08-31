@@ -67,11 +67,11 @@ namespace Fusion.KCC
 
 			OverlapCapsule(_overlapInfo, _data, data.TargetPosition, _radius, _height, _radius, _collisionLayerMask, QueryTriggerInteraction.Collide);
 
-			_overlapInfo.ToggleConvexMeshes(false);
+			_overlapInfo.ToggleConvexMeshColliders(false);
 
 			data.TargetPosition = DepenetrateColliders(_overlapInfo, data, data.BasePosition, data.TargetPosition, true, true, _subSteps);
 
-			_overlapInfo.ToggleConvexMeshes(true);
+			_overlapInfo.ToggleConvexMeshColliders(true);
 
 			if (data.TargetPosition.IsEqual(desiredPosition) == false)
 			{

@@ -6,17 +6,22 @@ namespace Fusion.KCC
 	using UnityEngine.Profiling;
 	using UnityEngine.SceneManagement;
 
+	using ReadOnlyProcessors = System.Collections.ObjectModel.ReadOnlyCollection<IKCCProcessor>;
+
+	#pragma warning disable 0109
+
 	/// <summary>
 	/// Kinematic character controller component.
 	/// </summary>
 	[DisallowMultipleComponent]
+	[RequireComponent(typeof(Rigidbody))]
 	[OrderBefore(typeof(HitboxManager))]
-	public sealed partial class KCC : NetworkAreaOfInterestBehaviour, IBeforeAllTicks, IAfterAllTicks, IAfterTick
+	public sealed partial class KCC : NetworkAreaOfInterestBehaviour, IBeforeAllTicks, IAfterTick
 	{
 		// CONSTANTS
 
 		private const int CACHE_SIZE   = 64;
-		private const int HISTORY_SIZE = 180;
+		private const int HISTORY_SIZE = 60;
 
 		// PUBLIC MEMBERS
 
@@ -51,6 +56,11 @@ namespace Fusion.KCC
 		public KCCData RenderData => _renderData;
 
 		/// <summary>
+		/// Returns <c>KCCTransientData</c> instance used to store/restore and process data from/to KCCData before/after KCC moves in fixed/render update.
+		/// </summary>
+		public KCCTransientData TransientData => _transientData;
+
+		/// <summary>
 		/// Basic <c>KCC</c> settings. These settings are reset to default when <c>Initialize()</c> or <c>Deinitialize()</c> is called.
 		/// </summary>
 		public KCCSettings Settings => _settings;
@@ -78,12 +88,12 @@ namespace Fusion.KCC
 		/// <summary>
 		/// <c>True</c> if the <c>KCC</c> has input authority (compatible with any <c>Driver</c>).
 		/// </summary>
-		public bool HasInputAuthority => _hasInputAuthority;
+		public new bool HasInputAuthority => _hasInputAuthority;
 
 		/// <summary>
 		/// <c>True</c> if the <c>KCC</c> has state authority (compatible with any <c>Driver</c>).
 		/// </summary>
-		public bool HasStateAuthority => _hasStateAuthority;
+		public new bool HasStateAuthority => _hasStateAuthority;
 
 		/// <summary>
 		/// <c>True</c> if the <c>KCC</c> has input or state authority (compatible with any <c>Driver</c>).
@@ -93,7 +103,7 @@ namespace Fusion.KCC
 		/// <summary>
 		/// <c>True</c> if the <c>KCC</c> doesn't have input and state authority (compatible with any <c>Driver</c>).
 		/// </summary>
-		public bool IsProxy => _hasInputAuthority == false && _hasStateAuthority == false;
+		public new bool IsProxy => _hasInputAuthority == false && _hasStateAuthority == false;
 
 		/// <summary>
 		/// <c>True</c> if the <c>KCC</c> is in fixed update. This can be used to skip logic in render.
@@ -111,10 +121,11 @@ namespace Fusion.KCC
 		public Vector3 PredictionError => _predictionError;
 
 		/// <summary>
-		/// Locally executed processors. This list is cleared in Initialize().
+		/// Locally executed processors. This list is cleared in <c>Initialize()</c> and initialized with <c>KCCSettings.Processors</c>.
+		/// The list is read-only and can be explicitly modified by <c>AddLocalProcessor()</c> and <c>RemoveLocalProcessor()</c>.
+		/// <c>IKCCProcessor.Enter()</c> and <c>IKCCProcessor.Exit()</c> are called on input and state authority.
 		/// </summary>
-		[NonSerialized]
-		public List<IKCCProcessor> LocalProcessors = new List<IKCCProcessor>();
+		public ReadOnlyProcessors LocalProcessors => _localROProcessors;
 
 		/// <summary>
 		/// Called at the end of Initialize().
@@ -144,57 +155,64 @@ namespace Fusion.KCC
 		// PRIVATE MEMBERS
 
 		[SerializeField]
-		private KCCSettings     _settings = new KCCSettings();
+		private KCCSettings         _settings = new KCCSettings();
 
-		private EKCCDriver      _driver;
-		private Transform       _transform;
-		private bool            _isFixed;
-		private bool            _isSpawned;
-		private bool            _isInitialized;
-		private bool            _hasManualUpdate;
-		private bool            _hasInputAuthority;
-		private bool            _hasStateAuthority;
-		private KCCUpdater      _updater;
-		private KCCDebug        _debug                  = new KCCDebug();
-		private KCCStatistics   _statistics             = new KCCStatistics();
-		private KCCCollider     _collider               = new KCCCollider();
-		private KCCData         _fixedData              = new KCCData();
-		private KCCData         _renderData             = new KCCData();
-		private KCCData[]       _historyData            = new KCCData[HISTORY_SIZE];
-		private KCCData         _transientData          = new KCCData();
-		private KCCSettings     _defaultSettings        = new KCCSettings();
-		private KCCSettings     _runtimeSettings        = new KCCSettings();
-		private KCCOverlapInfo  _extendedOverlapInfo    = new KCCOverlapInfo(CACHE_SIZE);
-		private KCCOverlapInfo  _sharedOverlapInfo      = new KCCOverlapInfo(CACHE_SIZE);
-		private KCCOverlapInfo  _trackOverlapInfo       = new KCCOverlapInfo(CACHE_SIZE);
-		private KCCRaycastInfo  _raycastInfo            = new KCCRaycastInfo(CACHE_SIZE);
-		private List<Collider>  _childColliders         = new List<Collider>();
-		private RaycastHit[]    _raycastHits            = new RaycastHit[CACHE_SIZE];
-		private Collider[]      _hitColliders           = new Collider[CACHE_SIZE];
-		private Collider[]      _addColliders           = new Collider[CACHE_SIZE];
-		private Collider[]      _removeColliders        = new Collider[CACHE_SIZE];
-		private KCCCollision[]  _removeCollisions       = new KCCCollision[CACHE_SIZE];
-		private KCCResolver     _resolver               = new KCCResolver(CACHE_SIZE);
-		private EKCCStage       _activeStage            = EKCCStage.None;
-		private EKCCFeatures    _activeFeatures         = EKCCFeatures.None;
-		private IKCCProcessor[] _stageProcessors        = new IKCCProcessor[CACHE_SIZE];
-		private int             _stageProcessorIndex    = 0;
-		private IKCCProcessor[] _cachedProcessors       = new IKCCProcessor[CACHE_SIZE];
-		private EKCCStages[]    _cachedProcessorStages  = new EKCCStages[CACHE_SIZE];
-		private int             _cachedProcessorCount   = 0;
-		private float           _lastRenderTime;
-		private Vector3         _lastRenderPosition;
-		private Vector3         _predictionError;
+		private EKCCDriver          _driver;
+		private Transform           _transform;
+		private Rigidbody           _rigidbody;
+		private bool                _isFixed;
+		private bool                _isSpawned;
+		private bool                _isInitialized;
+		private bool                _hasManualUpdate;
+		private bool                _hasInputAuthority;
+		private bool                _hasStateAuthority;
+		private KCCUpdater          _updater;
+		private KCCDebug            _debug                 = new KCCDebug();
+		private KCCStatistics       _statistics            = new KCCStatistics();
+		private KCCCollider         _collider              = new KCCCollider();
+		private KCCData             _fixedData             = new KCCData();
+		private KCCData             _renderData            = new KCCData();
+		private KCCData[]           _historyData           = new KCCData[HISTORY_SIZE];
+		private KCCTransientData    _transientData         = new KCCTransientData();
+		private KCCSettings         _defaultSettings       = new KCCSettings();
+		private KCCSettings         _runtimeSettings       = new KCCSettings();
+		private KCCOverlapInfo      _extendedOverlapInfo   = new KCCOverlapInfo(CACHE_SIZE);
+		private KCCOverlapInfo      _sharedOverlapInfo     = new KCCOverlapInfo(CACHE_SIZE);
+		private KCCOverlapInfo      _trackOverlapInfo      = new KCCOverlapInfo(CACHE_SIZE);
+		private KCCRaycastInfo      _raycastInfo           = new KCCRaycastInfo(CACHE_SIZE);
+		private List<Collider>      _childColliders        = new List<Collider>();
+		private RaycastHit[]        _raycastHits           = new RaycastHit[CACHE_SIZE];
+		private Collider[]          _hitColliders          = new Collider[CACHE_SIZE];
+		private Collider[]          _addColliders          = new Collider[CACHE_SIZE];
+		private Collider[]          _removeColliders       = new Collider[CACHE_SIZE];
+		private KCCCollision[]      _removeCollisions      = new KCCCollision[CACHE_SIZE];
+		private KCCResolver         _resolver              = new KCCResolver(CACHE_SIZE);
+		private EKCCStage           _activeStage           = EKCCStage.None;
+		private EKCCFeatures        _activeFeatures        = EKCCFeatures.None;
+		private IKCCProcessor[]     _stageProcessors       = new IKCCProcessor[CACHE_SIZE];
+		private int                 _stageProcessorIndex   = 0;
+		private IKCCProcessor[]     _cachedProcessors      = new IKCCProcessor[CACHE_SIZE];
+		private EKCCStages[]        _cachedProcessorStages = new EKCCStages[CACHE_SIZE];
+		private int                 _cachedProcessorCount  = 0;
+		private List<IKCCProcessor> _localProcessors       = new List<IKCCProcessor>();
+		private ReadOnlyProcessors  _localROProcessors;
+		private float               _lastRenderTime;
+		private Vector3             _lastRenderPosition;
+		private int                 _lastRenderInitialization;
+		private int                 _lastFixedInitialization;
+		private Vector3             _lastAntiJitterPosition;
+		private Vector3             _predictionError;
 
-		private static readonly Action<IKCCProcessor, KCC, KCCData> _setInputProperties    = (processor, kcc, data) => processor.SetInputProperties(kcc, data);
-		private static readonly Action<IKCCProcessor, KCC, KCCData> _setDynamicVelocity    = (processor, kcc, data) => processor.SetDynamicVelocity(kcc, data);
-		private static readonly Action<IKCCProcessor, KCC, KCCData> _setKinematicDirection = (processor, kcc, data) => processor.SetKinematicDirection(kcc, data);
-		private static readonly Action<IKCCProcessor, KCC, KCCData> _setKinematicTangent   = (processor, kcc, data) => processor.SetKinematicTangent(kcc, data);
-		private static readonly Action<IKCCProcessor, KCC, KCCData> _setKinematicSpeed     = (processor, kcc, data) => processor.SetKinematicSpeed(kcc, data);
-		private static readonly Action<IKCCProcessor, KCC, KCCData> _setKinematicVelocity  = (processor, kcc, data) => processor.SetKinematicVelocity(kcc, data);
-		private static readonly Action<IKCCProcessor, KCC, KCCData> _processPhysicsQuery   = (processor, kcc, data) => processor.ProcessPhysicsQuery(kcc, data);
-		private static readonly Action<IKCCProcessor, KCC, KCCData> _stay                  = (processor, kcc, data) => processor.Stay(kcc, data);
-		private static readonly Action<IKCCProcessor, KCC, KCCData> _interpolate           = (processor, kcc, data) => processor.Interpolate(kcc, data);
+		private static readonly Action<IKCCProcessor, KCC, KCCData>         _setInputProperties    = (processor, kcc, data)           => processor.SetInputProperties(kcc, data);
+		private static readonly Action<IKCCProcessor, KCC, KCCData>         _setDynamicVelocity    = (processor, kcc, data)           => processor.SetDynamicVelocity(kcc, data);
+		private static readonly Action<IKCCProcessor, KCC, KCCData>         _setKinematicDirection = (processor, kcc, data)           => processor.SetKinematicDirection(kcc, data);
+		private static readonly Action<IKCCProcessor, KCC, KCCData>         _setKinematicTangent   = (processor, kcc, data)           => processor.SetKinematicTangent(kcc, data);
+		private static readonly Action<IKCCProcessor, KCC, KCCData>         _setKinematicSpeed     = (processor, kcc, data)           => processor.SetKinematicSpeed(kcc, data);
+		private static readonly Action<IKCCProcessor, KCC, KCCData>         _setKinematicVelocity  = (processor, kcc, data)           => processor.SetKinematicVelocity(kcc, data);
+		private static readonly Action<IKCCProcessor, KCC, KCCData>         _processPhysicsQuery   = (processor, kcc, data)           => processor.ProcessPhysicsQuery(kcc, data);
+		private static readonly Action<IKCCProcessor, KCC, KCCData>         _onStay                = (processor, kcc, data)           => processor.OnStay(kcc, data);
+		private static readonly Action<IKCCProcessor, KCC, KCCData>         _onInterpolate         = (processor, kcc, data)           => processor.OnInterpolate(kcc, data);
+		private static readonly Action<IKCCProcessor, KCC, KCCData, object> _processUserLogic      = (processor, kcc, data, userData) => processor.ProcessUserLogic(kcc, data, userData);
 
 		// PUBLIC METHODS
 
@@ -276,7 +294,7 @@ namespace Fusion.KCC
 				}
 			}
 
-			SynchronizeTransform(data, false, true);
+			SynchronizeTransform(data, false, true, false);
 		}
 
 		/// <summary>
@@ -312,7 +330,7 @@ namespace Fusion.KCC
 				data.LookYaw   = yaw;
 			}
 
-			SynchronizeTransform(data, false, true);
+			SynchronizeTransform(data, false, true, false);
 		}
 
 		/// <summary>
@@ -348,7 +366,7 @@ namespace Fusion.KCC
 				if (preserveYaw   == false) { data.LookYaw   = yaw;   }
 			}
 
-			SynchronizeTransform(data, false, true);
+			SynchronizeTransform(data, false, true, false);
 		}
 
 		/// <summary>
@@ -576,7 +594,7 @@ namespace Fusion.KCC
 				data.IsSnappingToGround = false;
 			}
 
-			SynchronizeTransform(data, true, false);
+			SynchronizeTransform(data, true, false, false);
 		}
 
 		/// <summary>
@@ -610,7 +628,15 @@ namespace Fusion.KCC
 			_fixedData.LookPitch          = lookPitch;
 			_fixedData.LookYaw            = lookYaw;
 
-			SynchronizeTransform(_fixedData, true, true);
+			SynchronizeTransform(_fixedData, true, true, false);
+		}
+
+		/// <summary>
+		/// Immediately synchronize Transform and Rigidbody based on current state.
+		/// </summary>
+		public void SynchronizeTransform(bool synchronizePosition, bool synchronizeRotation)
+		{
+			SynchronizeTransform(Data, synchronizePosition, synchronizeRotation, IsInFixedUpdate == false && IsProxy == false);
 		}
 
 		/// <summary>
@@ -785,6 +811,16 @@ namespace Fusion.KCC
 		}
 
 		/// <summary>
+		/// Check if the <c>KCC</c> potentially collides with a collider, using same filtering as physics query.
+		/// Returning <c>true</c> doesn't mean the collider overlaps. Can be used as a filter after custom overlap/shapecast query.
+		/// <param name="hitCollider">Collider instance.</param>
+		/// </summary>
+		public bool IsValidHitCollider(Collider hitCollider)
+		{
+			return IsValidHitCollider(Data, hitCollider);
+		}
+
+		/// <summary>
 		/// Check if the <c>KCC</c> has registered custom modifier (interaction provider) of type T in <c>KCCData.Modifiers</c>.
 		/// </summary>
 		public bool HasModifier<T>() where T : class
@@ -809,6 +845,24 @@ namespace Fusion.KCC
 		public T GetModifier<T>() where T : class
 		{
 			return Data.Modifiers.GetProvider<T>();
+		}
+
+		/// <summary>
+		/// Returns all registered custom modifiers (interaction providers) of type T from <c>KCCData.Modifiers</c>.
+		/// </summary>
+		public void GetModifiers<T>(List<T> providers) where T : class
+		{
+			Data.Modifiers.GetProviders(providers, true);
+		}
+
+		/// <summary>
+		/// Returns all registered custom modifiers (interaction providers) of type T from <c>KCCData.Modifiers</c>.
+		/// </summary>
+		public List<T> GetModifiers<T>() where T : class
+		{
+			List<T> providers = new List<T>();
+			GetModifiers(providers);
+			return providers;
 		}
 
 		/// <summary>
@@ -841,6 +895,9 @@ namespace Fusion.KCC
 				return;
 			}
 
+			if (provider.CanStartInteraction(this, data) == false)
+				return;
+
 			KCCModifier modifier = data.Modifiers.Add(networkObject, provider);
 			if (modifier.Processor != null)
 			{
@@ -862,16 +919,19 @@ namespace Fusion.KCC
 			KCCData data = Data;
 
 			KCCModifier modifier = data.Modifiers.Find(provider);
-			if (modifier != null)
+			if (modifier == null)
+				return;
+
+			if (provider.CanStopInteraction(this, data) == false)
+				return;
+
+			IKCCProcessor processor = modifier.Processor;
+
+			data.Modifiers.Remove(modifier);
+
+			if (processor != null)
 			{
-				IKCCProcessor processor = modifier.Processor;
-
-				data.Modifiers.Remove(modifier);
-
-				if (processor != null)
-				{
-					OnProcessorRemoved(data, processor);
-				}
+				OnProcessorRemoved(data, processor);
 			}
 		}
 
@@ -930,7 +990,31 @@ namespace Fusion.KCC
 		}
 
 		/// <summary>
+		/// Returns all registered interaction providers of type T.
+		/// </summary>
+		public void GetInteractions<T>(List<T> providers) where T : class
+		{
+			providers.Clear();
+
+			KCCData data = Data;
+
+			data.Modifiers.GetProviders(providers, false);
+			data.Collisions.GetProviders(providers, false);
+		}
+
+		/// <summary>
+		/// Returns all registered interaction providers of type T.
+		/// </summary>
+		public List<T> GetInteractions<T>() where T : class
+		{
+			List<T> providers = new List<T>();
+			GetInteractions(providers);
+			return providers;
+		}
+
+		/// <summary>
 		/// Check if the KCC has registered any processor of type T.
+		/// This method looks in modifiers, collisions and local processors.
 		/// </summary>
 		public bool HasProcessor<T>() where T : class
 		{
@@ -941,17 +1025,10 @@ namespace Fusion.KCC
 			if (data.Collisions.HasProcessor<T>() == true)
 				return true;
 
-			List<IKCCProcessor> localProcessors = LocalProcessors;
+			List<IKCCProcessor> localProcessors = _localProcessors;
 			for (int i = 0, count = localProcessors.Count; i < count; ++i)
 			{
 				if (localProcessors[i] is T)
-					return true;
-			}
-
-			List<KCCProcessor> settingsProcessors = _settings.Processors;
-			for (int i = 0, count = settingsProcessors.Count; i < count; ++i)
-			{
-				if (settingsProcessors[i] is T)
 					return true;
 			}
 
@@ -960,6 +1037,7 @@ namespace Fusion.KCC
 
 		/// <summary>
 		/// Check if the KCC has registered processor.
+		/// This method looks in modifiers, collisions and local processors.
 		/// </summary>
 		/// <param name="processor">IKCCProcessor instance.</param>
 		public bool HasProcessor<T>(T processor) where T : Component, IKCCProcessor
@@ -974,17 +1052,10 @@ namespace Fusion.KCC
 			if (data.Collisions.HasProcessor(processor) == true)
 				return true;
 
-			List<IKCCProcessor> localProcessors = LocalProcessors;
+			List<IKCCProcessor> localProcessors = _localProcessors;
 			for (int i = 0, count = localProcessors.Count; i < count; ++i)
 			{
 				if (object.ReferenceEquals(localProcessors[i], processor) == true)
-					return true;
-			}
-
-			List<KCCProcessor> settingsProcessors = _settings.Processors;
-			for (int i = 0, count = settingsProcessors.Count; i < count; ++i)
-			{
-				if (object.ReferenceEquals(settingsProcessors[i], processor) == true)
 					return true;
 			}
 
@@ -993,6 +1064,7 @@ namespace Fusion.KCC
 
 		/// <summary>
 		/// Returns any registered processor of type T.
+		/// This method looks in modifiers, collisions and local processors.
 		/// </summary>
 		public T GetProcessor<T>() where T : class
 		{
@@ -1008,22 +1080,93 @@ namespace Fusion.KCC
 			if (object.ReferenceEquals(processor, null) == false)
 				return processor;
 
-
-			List<IKCCProcessor> localProcessors = LocalProcessors;
+			List<IKCCProcessor> localProcessors = _localProcessors;
 			for (int i = 0, count = localProcessors.Count; i < count; ++i)
 			{
 				if (localProcessors[i] is T localProcessor)
 					return localProcessor;
 			}
 
-			List<KCCProcessor> settingsProcessors = _settings.Processors;
-			for (int i = 0, count = settingsProcessors.Count; i < count; ++i)
+			return null;
+		}
+
+		/// <summary>
+		/// Returns all registered processors of type T.
+		/// This method looks in modifiers, collisions and local processors.
+		/// </summary>
+		public void GetProcessors<T>(List<T> processors, bool sortByPriority = false) where T : class
+		{
+			processors.Clear();
+
+			KCCData data = Data;
+
+			data.Modifiers.GetProcessors(processors, false);
+			data.Collisions.GetProcessors(processors, false);
+
+			List<IKCCProcessor> localProcessors = _localProcessors;
+			for (int i = 0, count = localProcessors.Count; i < count; ++i)
 			{
-				if (settingsProcessors[i] is T settingsProcessor)
-					return settingsProcessor;
+				if (localProcessors[i] is T localProcessor)
+				{
+					processors.Add(localProcessor);
+				}
 			}
 
-			return null;
+			if (sortByPriority == true)
+			{
+				SortProcessors(processors);
+			}
+		}
+
+		/// <summary>
+		/// Returns all registered processors of type T.
+		/// This method looks in modifiers, collisions and local processors.
+		/// </summary>
+		public List<T> GetProcessors<T>(bool sortByPriority = false) where T : class
+		{
+			List<T> processors = new List<T>();
+			GetProcessors(processors, sortByPriority);
+			return processors;
+		}
+
+		/// <summary>
+		/// Register local processor to <c>LocalProcessors</c> list. Local processors are NOT networked, be careful!
+		/// <c>IKCCProcessor.Enter()</c> is called on input and state authority.
+		/// Note: <c>KCCSettings.Processors</c> are added as local processors upon initialization.
+		/// </summary>
+		/// <param name="processor">IKCCProcessor instance.</param>
+		public void AddLocalProcessor(IKCCProcessor processor)
+		{
+			if (processor == null)
+				throw new ArgumentNullException(nameof(processor));
+			if (_driver == EKCCDriver.None)
+				throw new InvalidOperationException("KCC must be initialized first!");
+
+			if (_localProcessors.Contains(processor) == true)
+				return;
+
+			_localProcessors.Add(processor);
+
+			if (HasAnyAuthority == true)
+			{
+				try { processor.OnEnter(this, Data); } catch (Exception exception) { UnityEngine.Debug.LogException(exception); }
+			}
+		}
+
+		/// <summary>
+		/// Unregister local processor from <c>LocalProcessors</c> list. Local processors are NOT networked, be careful!
+		/// <c>IKCCProcessor.Exit()</c> is called on input and state authority.
+		/// </summary>
+		/// <param name="processor">IKCCProcessor instance.</param>
+		public void RemoveLocalProcessor(IKCCProcessor processor)
+		{
+			if (_localProcessors.Remove(processor) == false)
+				return;
+
+			if (HasAnyAuthority == true && processor != null)
+			{
+				try { processor.OnExit(this, Data); } catch (Exception exception) { UnityEngine.Debug.LogException(exception); }
+			}
 		}
 
 		/// <summary>
@@ -1142,12 +1285,60 @@ namespace Fusion.KCC
 		}
 
 		/// <summary>
+		/// Executes <c>IKCCProcessor.ProcessUserLogic()</c> stage. Can be executed multiple times before or after KCC updates.
+		/// Cannot be called when other stage is active (including self). Executed for all (input/state authority + proxy).
+		/// </summary>
+		/// <param name="userData">User data passed as parameter to IKCCProcessor.ProcessUserLogic().</param>
+		public void ProcessUserLogic(object userData)
+		{
+			if (_driver == EKCCDriver.None)
+				return;
+			if (_activeStage != EKCCStage.None)
+				throw new InvalidOperationException($"User stage is not allowed during other stage execution!");
+
+			KCCData data;
+
+			if (IsInFixedUpdate == true)
+			{
+				data = _fixedData;
+				InitializeFixedUpdate(false);
+			}
+			else
+			{
+				data = _renderData;
+				InitializeRenderUpdate();
+			}
+
+			CacheProcessors(data);
+			ProcessStage(EKCCStage.ProcessUserLogic, data, _processUserLogic, userData);
+		}
+
+		/// <summary>
+		/// Returns true if a specific feature is currently active.
+		/// </summary>
+		public bool HasActiveFeature(EKCCFeature feature)
+		{
+			return _activeFeatures.Has(feature);
+		}
+
+		/// <summary>
+		/// Enforce execution of a specific KCC feature. Valid only from SetInputProperties stage.
+		/// </summary>
+		public void EnforceFeature(EKCCFeature feature)
+		{
+			if (_activeStage != EKCCStage.SetInputProperties)
+				throw new InvalidOperationException($"Enforcing features is allowed only during {nameof(EKCCStage.SetInputProperties)} stage!");
+
+			_activeFeatures = (EKCCFeatures)((int)_activeFeatures | (1 << (int)feature));
+		}
+
+		/// <summary>
 		/// Suppress execution of a specific KCC feature. Valid only from SetInputProperties stage.
 		/// </summary>
 		public void SuppressFeature(EKCCFeature feature)
 		{
 			if (_activeStage != EKCCStage.SetInputProperties)
-				throw new InvalidOperationException("Suppressing features is allowed only during SetInputProperties stage!");
+				throw new InvalidOperationException($"Suppressing features is allowed only during {nameof(EKCCStage.SetInputProperties)} stage!");
 
 			_activeFeatures = (EKCCFeatures)((int)_activeFeatures & ~(1 << (int)feature));
 		}
@@ -1182,12 +1373,17 @@ namespace Fusion.KCC
 		/// </summary>
 		public void Initialize(EKCCDriver driver)
 		{
+			if (driver == EKCCDriver.None)
+			{
+				Deinitialize();
+				return;
+			}
+
 			if (driver == EKCCDriver.Fusion && _isSpawned == false)
 				throw new InvalidOperationException("KCC cannot be explicitly initialized with Fusion driver before KCC.Spawned()!");
 
 			if (_isInitialized == false)
 			{
-				_transform = transform;
 				_defaultSettings.CopyFromOther(_settings);
 				_isInitialized = true;
 			}
@@ -1201,54 +1397,44 @@ namespace Fusion.KCC
 
 			_driver = driver;
 
+			KCCUtility.GetLookRotationAngles(_transform.rotation, out float lookPitch, out float lookYaw);
+
 			_fixedData = new KCCData();
-			_fixedData.Frame           = Time.frameCount;
-			_fixedData.Alpha           = 1.0f;
 			_fixedData.BasePosition    = _transform.position;
 			_fixedData.DesiredPosition = _transform.position;
 			_fixedData.TargetPosition  = _transform.position;
+			_fixedData.LookPitch       = lookPitch;
+			_fixedData.LookYaw         = lookYaw;
 
-			if (_driver == EKCCDriver.Unity)
-			{
-				_fixedData.Tick      = Mathf.RoundToInt(Time.fixedUnscaledTime / Time.fixedUnscaledDeltaTime);
-				_fixedData.Time      = Time.fixedTime;
-				_fixedData.DeltaTime = Time.fixedDeltaTime;
+			InitializeFixedUpdate(true);
 
-				_hasInputAuthority = true;
-				_hasStateAuthority = true;
-			}
-			else if (_driver == EKCCDriver.Fusion)
-			{
-				_fixedData.Tick      = (int)Runner.Simulation.Tick;
-				_fixedData.Time      = Runner.SimulationTime;
-				_fixedData.DeltaTime = Runner.Simulation.DeltaTime;
-
-				_hasInputAuthority = Object.HasInputAuthority;
-				_hasStateAuthority = Object.HasStateAuthority;
-			}
-			else
-			{
-				throw new NotSupportedException(_driver.ToString());
-			}
-
-			KCCUtility.GetLookRotationAngles(_transform.rotation, out float lookPitch, out float lookYaw);
-
-			_fixedData.LookPitch = lookPitch;
-			_fixedData.LookYaw   = lookYaw;
-
-			if (_driver == EKCCDriver.Fusion && HasStateAuthority == false)
+			if (_driver == EKCCDriver.Fusion && _hasStateAuthority == false)
 			{
 				ReadNetworkData();
-				SynchronizeTransform(_fixedData, true, true);
+				SynchronizeTransform(_fixedData, true, true, false);
 			}
 
 			_renderData = new KCCData();
 			_renderData.CopyFromOther(_fixedData);
 
+			_lastRenderPosition     = _renderData.TargetPosition;
+			_lastAntiJitterPosition = _renderData.TargetPosition;
+
+			_transientData = new KCCTransientData();
+
 			SetManualUpdate(hasManualUpdate);
 
 			RefreshCollider();
 			RefreshChildColliders();
+
+			BaseKCCProcessor[] defaultProcessors = _settings.Processors;
+			if (defaultProcessors != null)
+			{
+				for (int i = 0, count = defaultProcessors.Length; i < count; ++i)
+				{
+					AddLocalProcessor(defaultProcessors[i]);
+				}
+			}
 
 			if (OnInitialize != null)
 			{
@@ -1264,7 +1450,7 @@ namespace Fusion.KCC
 				_fixedData.CopyFromOther(_renderData);
 			}
 
-			if (_driver == EKCCDriver.Fusion && HasStateAuthority == true)
+			if (_driver == EKCCDriver.Fusion && HasAnyAuthority == true)
 			{
 				WriteNetworkData();
 			}
@@ -1282,8 +1468,13 @@ namespace Fusion.KCC
 				try { OnDeinitialize(this); } catch (Exception exception) { UnityEngine.Debug.LogException(exception); }
 			}
 
-			RemoveAllCollisions(_fixedData);
-			RemoveAllModifiers(_fixedData);
+			ForceRemoveAllCollisions(_fixedData);
+			ForceRemoveAllModifiers(_fixedData);
+
+			while (_localProcessors.Count > 0)
+			{
+				RemoveLocalProcessor(_localProcessors[_localProcessors.Count - 1]);
+			}
 
 			SetDefaults();
 		}
@@ -1319,7 +1510,7 @@ namespace Fusion.KCC
 		}
 
 		/// <summary>
-		/// Explicit interpolation on demand. Implicit interpolation in render update is skipped.
+		/// Explicit interpolation on demand. Implicit interpolation in render update is not skipped.
 		/// </summary>
 		public void Interpolate()
 		{
@@ -1331,8 +1522,8 @@ namespace Fusion.KCC
 			Profiler.BeginSample("KCC.Interpolate");
 			InterpolateNetworkData();
 			CacheProcessors(data);
-			ProcessStage(EKCCStage.Interpolate, data, _interpolate);
-			SynchronizeTransform(data, true, true);
+			ProcessStage(EKCCStage.OnInterpolate, data, _onInterpolate);
+			SynchronizeTransform(data, true, true, IsInFixedUpdate == false && IsProxy == false);
 			Profiler.EndSample();
 		}
 
@@ -1349,12 +1540,26 @@ namespace Fusion.KCC
 
 		// MonoBehaviour INTERFACE
 
+		private void Awake()
+		{
+			_transform = transform;
+			_rigidbody = GetComponent<Rigidbody>();
+
+			_localROProcessors = new ReadOnlyProcessors(_localProcessors);
+
+			if (_rigidbody == null)
+				throw new NullReferenceException($"GameObject {name} has missing Rigidbody component!");
+
+			_rigidbody.isKinematic = true;
+		}
+
 		private void OnDestroy()
 		{
-			_isFixed   = false;
-			_isSpawned = false;
+			_isFixed       = false;
+			_isSpawned     = false;
+			_isInitialized = false;
 
-			Deinitialize();
+			SetDefaults();
 
 			OnInitialize     = null;
 			OnDeinitialize   = null;
@@ -1366,10 +1571,7 @@ namespace Fusion.KCC
 		// SimulationBehaviour INTERFACE
 
 		public override int? DynamicWordCount => GetNetworkDataWordCount();
-
-		public override void CopyBackingFieldsToState(bool firstTime)
-		{
-		}
+		public override bool InvokeOnChangedForInitialNonZeroValues => false;
 
 		public override void Spawned()
 		{
@@ -1426,14 +1628,18 @@ namespace Fusion.KCC
 
 		void IBeforeAllTicks.BeforeAllTicks(bool resimulation, int tickCount)
 		{
-			_isFixed = false;
-
-			if (resimulation == false)
-				return;
 			if (_driver != EKCCDriver.Fusion)
 				return;
 
+			_isFixed = true;
+
+			if (resimulation == false)
+				return;
+
 			Profiler.BeginSample("KCC.BeforeAllTicks");
+
+			_lastRenderInitialization = default;
+			_lastFixedInitialization  = default;
 
 			_hasInputAuthority = Object.HasInputAuthority;
 			_hasStateAuthority = Object.HasStateAuthority;
@@ -1456,50 +1662,11 @@ namespace Fusion.KCC
 
 			if (historyData != null)
 			{
-				Vector3 quantizedPosition = GetQuantizedPosition(historyData.TargetPosition);
-				if (_fixedData.TargetPosition.IsEqual(quantizedPosition) == true)
-				{
-					_fixedData.BasePosition    = historyData.BasePosition;
-					_fixedData.DesiredPosition = historyData.DesiredPosition;
-					_fixedData.TargetPosition  = historyData.TargetPosition;
-				}
-
-				float quantizedPitch = GetQuantizedRotation(historyData.LookPitch);
-				if (_fixedData.LookPitch == quantizedPitch)
-				{
-					_fixedData.LookPitch = historyData.LookPitch;
-				}
-
-				float quantizedYaw = GetQuantizedRotation(historyData.LookYaw);
-				if (_fixedData.LookYaw == quantizedYaw)
-				{
-					_fixedData.LookYaw = historyData.LookYaw;
-				}
+				RestoreHistoryData(historyData);
 			}
 
 			RefreshCollider();
-			SynchronizeTransform(_fixedData, true, true);
-
-			Profiler.EndSample();
-		}
-
-		// AfterAllTicks INTERFACE
-
-		void IAfterAllTicks.AfterAllTicks(bool resimulation, int tickCount)
-		{
-			_isFixed = false;
-
-			if (resimulation == true)
-				return;
-			if (_driver != EKCCDriver.Fusion)
-				return;
-
-			Profiler.BeginSample("KCC.AfterAllTicks");
-
-			if (HasStateAuthority == true)
-			{
-				WriteNetworkData();
-			}
+			SynchronizeTransform(_fixedData, true, true, false);
 
 			Profiler.EndSample();
 		}
@@ -1510,33 +1677,75 @@ namespace Fusion.KCC
 		{
 			if (_driver != EKCCDriver.Fusion)
 				return;
-			if (HasAnyAuthority == false)
-				return;
 
-			PublishFixedData();
+			Profiler.BeginSample("KCC.AfterTick");
+
+			if (HasAnyAuthority == true)
+			{
+				PublishFixedData();
+				WriteNetworkData();
+			}
+
+			if (Runner.IsLastTick == true)
+			{
+				_isFixed = false;
+			}
+
+			Profiler.EndSample();
 		}
 
 		// PRIVATE METHODS
 
-		private void OnFixedUpdateInternal()
+		private void InitializeFixedUpdate(bool forceReinitialize)
 		{
-			_isFixed = false;
+			if (_driver == EKCCDriver.None)
+				return;
 
-			if (IsInFixedUpdate == false)
-				throw new InvalidOperationException();
+			int currentTick = _driver == EKCCDriver.Fusion ? (int)Runner.Simulation.Tick : Mathf.RoundToInt(Time.fixedUnscaledTime / Time.fixedUnscaledDeltaTime);
+			if (currentTick == _lastFixedInitialization && forceReinitialize == false)
+				return;
 
-			if (_driver == EKCCDriver.Fusion)
-			{
-				_hasInputAuthority = _isSpawned == true && Object.HasInputAuthority == true;
-				_hasStateAuthority = _isSpawned == true && Object.HasStateAuthority == true;
-			}
+			_lastFixedInitialization = currentTick;
 
 			_debug.Reset();
 			_statistics.Reset();
 
 			_fixedData.Frame = Time.frameCount;
+			_fixedData.Tick  = currentTick;
 			_fixedData.Alpha = 1.0f;
 
+			if (_driver == EKCCDriver.Fusion)
+			{
+				_fixedData.Time      = Runner.SimulationTime;
+				_fixedData.DeltaTime = Runner.Simulation.DeltaTime;
+
+				_hasInputAuthority = _isSpawned == true && Object.HasInputAuthority == true;
+				_hasStateAuthority = _isSpawned == true && Object.HasStateAuthority == true;
+			}
+			else if (_driver == EKCCDriver.Unity)
+			{
+				_fixedData.Time      = Time.fixedTime;
+				_fixedData.DeltaTime = Time.fixedDeltaTime;
+
+				_hasInputAuthority = true;
+				_hasStateAuthority = true;
+			}
+			else
+			{
+				throw new NotSupportedException(_driver.ToString());
+			}
+
+			_fixedData.UnscaledDeltaTime = _fixedData.DeltaTime;
+		}
+
+		private void OnFixedUpdateInternal()
+		{
+			if (_driver == EKCCDriver.None)
+				return;
+			if (IsInFixedUpdate == false)
+				throw new InvalidOperationException();
+
+			InitializeFixedUpdate(false);
 			RefreshCollider();
 
 			if (HasAnyAuthority == false)
@@ -1545,104 +1754,113 @@ namespace Fusion.KCC
 				return;
 			}
 
-			if (_driver == EKCCDriver.Unity)
-			{
-				_fixedData.Tick              = Mathf.RoundToInt(Time.fixedUnscaledTime / Time.fixedUnscaledDeltaTime);
-				_fixedData.Time              = Time.fixedTime;
-				_fixedData.DeltaTime         = Time.fixedDeltaTime;
-				_fixedData.UnscaledDeltaTime = _fixedData.DeltaTime;
-			}
-			else if (_driver == EKCCDriver.Fusion)
-			{
-				_fixedData.Tick              = (int)Runner.Simulation.Tick;
-				_fixedData.Time              = Runner.SimulationTime;
-				_fixedData.DeltaTime         = Runner.Simulation.DeltaTime;
-				_fixedData.UnscaledDeltaTime = _fixedData.DeltaTime;
-			}
-			else
-			{
-				throw new NotSupportedException(_driver.ToString());
-			}
+			_transientData.Store(this, _fixedData);
 
-			StoreTransientData(_transientData, _fixedData);
+			bool wasFixed = _isFixed;
 
 			_isFixed = true;
 
 			Move(_fixedData);
 
-			_isFixed = false;
+			_isFixed = wasFixed;
 
-			RestoreTransientData(_transientData, _fixedData);
+			_transientData.Restore(this, _fixedData);
 
 			if (_driver == EKCCDriver.Unity)
 			{
 				PublishFixedData();
 			}
 
-			SynchronizeTransform(_fixedData, true, true);
+			SynchronizeTransform(_fixedData, true, true, false);
 
 			_debug.FixedUpdate(this);
 		}
 
-		private void OnRenderUpdateInternal()
+		private void InitializeRenderUpdate()
 		{
-			_isFixed = false;
+			if (_driver == EKCCDriver.None)
+				return;
 
-			if (IsInFixedUpdate == true)
-				throw new InvalidOperationException();
+			int currentFrame = Time.frameCount;
+			if (currentFrame == _lastRenderInitialization)
+				return;
+
+			_lastRenderInitialization = currentFrame;
 
 			_debug.Reset();
 			_statistics.Reset();
 
-			_renderData.Frame = Time.frameCount;
-
-			if (HasAnyAuthority == false)
-			{
-				InterpolateNetworkData();
-				CacheProcessors(_renderData);
-				ProcessStage(EKCCStage.Interpolate, _renderData, _interpolate);
-				SynchronizeTransform(_renderData, true, true);
-
-				_debug.RenderUpdate(this);
-				return;
-			}
+			_renderData.Frame = currentFrame;
 
 			float previousTime = _renderData.Time;
 
-			if (_driver == EKCCDriver.Unity)
+			if (_driver == EKCCDriver.Fusion)
 			{
-				_renderData.Tick              = Mathf.RoundToInt(Time.fixedUnscaledTime / Time.fixedUnscaledDeltaTime);
-				_renderData.Alpha             = Mathf.Clamp01((Time.time - _fixedData.Time) / Time.fixedDeltaTime);
-				_renderData.Time              = Time.time;
-				_renderData.DeltaTime         = _renderData.Time - previousTime;
-				_renderData.UnscaledDeltaTime = _renderData.DeltaTime;
-
-				if (_settings.RenderBehavior == EKCCRenderBehavior.Interpolate)
-				{
-					_renderData.Tick -= 1;
-					_renderData.Time -= Time.fixedDeltaTime;
-				}
+				_renderData.Tick  = (int)Runner.Simulation.Tick;
+				_renderData.Alpha = Runner.Simulation.StateAlpha;
+				_renderData.Time  = Runner.SimulationTime + Runner.Simulation.StateAlpha * Runner.DeltaTime;
 			}
-			else if (_driver == EKCCDriver.Fusion)
+			else if (_driver == EKCCDriver.Unity)
 			{
-				_renderData.Tick              = (int)Runner.Simulation.Tick;
-				_renderData.Alpha             = Runner.Simulation.StateAlpha;
-				_renderData.Time              = Runner.SimulationTime + Runner.Simulation.StateAlpha * Runner.DeltaTime;
-				_renderData.DeltaTime         = _renderData.Time - previousTime;
-				_renderData.UnscaledDeltaTime = _renderData.DeltaTime;
-
-				if (_settings.RenderBehavior == EKCCRenderBehavior.Interpolate)
-				{
-					_renderData.Tick -= 1;
-					_renderData.Time -= Runner.DeltaTime;
-				}
+				_renderData.Tick  = Mathf.RoundToInt(Time.fixedUnscaledTime / Time.fixedUnscaledDeltaTime);
+				_renderData.Alpha = Mathf.Clamp01((Time.time - _fixedData.Time) / Time.fixedDeltaTime);
+				_renderData.Time  = Time.time;
 			}
 			else
 			{
 				throw new NotSupportedException(_driver.ToString());
 			}
 
-			UpdatePredictionError();
+			if (_settings.RenderBehavior == EKCCRenderBehavior.Interpolate)
+			{
+				_renderData.Tick -= 1;
+				_renderData.Time -= _fixedData.DeltaTime;
+
+				if (_renderData.Frame == _fixedData.Frame)
+				{
+					previousTime -= _fixedData.DeltaTime;
+				}
+			}
+
+			_renderData.DeltaTime         = _renderData.Time - previousTime;
+			_renderData.UnscaledDeltaTime = _renderData.DeltaTime;
+		}
+
+		private void OnRenderUpdateInternal()
+		{
+			_isFixed = false;
+
+			if (_driver == EKCCDriver.None)
+				return;
+			if (IsInFixedUpdate == true)
+				throw new InvalidOperationException();
+
+			InitializeRenderUpdate();
+
+			if (HasAnyAuthority == false)
+			{
+				InterpolateNetworkData();
+				CacheProcessors(_renderData);
+				ProcessStage(EKCCStage.OnInterpolate, _renderData, _onInterpolate);
+				SynchronizeTransform(_renderData, true, true, false);
+
+				_debug.RenderUpdate(this);
+				return;
+			}
+
+			UpdatePredictionCorrection();
+
+			if (_debug.ShowPath == true)
+			{
+				if (_renderData.Frame == _fixedData.Frame)
+				{
+					UnityEngine.Debug.DrawLine(_fixedData.TargetPosition, _renderData.TargetPosition, Color.blue, _debug.DisplayTime);
+				}
+				else
+				{
+					UnityEngine.Debug.DrawLine(_lastRenderPosition, _renderData.TargetPosition, Color.magenta, _debug.DisplayTime);
+				}
+			}
 
 			if (_settings.RenderBehavior == EKCCRenderBehavior.Predict)
 			{
@@ -1660,38 +1878,43 @@ namespace Fusion.KCC
 				}
 				else
 				{
-					StoreTransientData(_transientData, _renderData);
+					_transientData.Store(this, _renderData);
 
 					Move(_renderData);
 
-					RestoreTransientData(_transientData, _renderData);
+					_transientData.Restore(this, _renderData);
 				}
 			}
 			else if (_settings.RenderBehavior == EKCCRenderBehavior.Interpolate)
 			{
-				KCCData current = _fixedData;
-				if (current.HasTeleported == false)
+				_activeStage    = EKCCStage.None;
+				_activeFeatures = _settings.Features;
+
+				CacheProcessors(_renderData);
+				SetInputProperties(_renderData);
+
+				KCCData currentFixedData = _fixedData;
+				if (currentFixedData.HasTeleported == false)
 				{
-					KCCData previous = GetHistory(current.Tick - 1);
-					if (previous != null)
+					KCCData previousFixedData = GetHistory(currentFixedData.Tick - 1);
+					if (previousFixedData != null)
 					{
 						float alpha = _renderData.Alpha;
 
-						_renderData.BasePosition    = Vector3.Lerp(previous.BasePosition, current.BasePosition, alpha) + _predictionError;
-						_renderData.DesiredPosition = Vector3.Lerp(previous.DesiredPosition, current.DesiredPosition, alpha) + _predictionError;
-						_renderData.TargetPosition  = Vector3.Lerp(previous.TargetPosition, current.TargetPosition, alpha) + _predictionError;
-						_renderData.LookPitch       = Mathf.Lerp(previous.LookPitch, current.LookPitch, alpha);
-						_renderData.LookYaw         = KCCMathUtility.InterpolateRange(previous.LookYaw, current.LookYaw, -180.0f, 180.0f, alpha);
-						_renderData.RealSpeed       = Mathf.Lerp(previous.RealSpeed, current.RealSpeed, alpha);
-						_renderData.RealVelocity    = Vector3.Lerp(previous.RealVelocity, current.RealVelocity, alpha);
+						_renderData.BasePosition    = Vector3.Lerp(previousFixedData.BasePosition, currentFixedData.BasePosition, alpha) + _predictionError;
+						_renderData.DesiredPosition = Vector3.Lerp(previousFixedData.DesiredPosition, currentFixedData.DesiredPosition, alpha) + _predictionError;
+						_renderData.TargetPosition  = Vector3.Lerp(previousFixedData.TargetPosition, currentFixedData.TargetPosition, alpha) + _predictionError;
+						_renderData.LookPitch       = Mathf.Lerp(previousFixedData.LookPitch, currentFixedData.LookPitch, alpha);
+						_renderData.LookYaw         = KCCMathUtility.InterpolateRange(previousFixedData.LookYaw, currentFixedData.LookYaw, -180.0f, 180.0f, alpha);
+						_renderData.RealSpeed       = Mathf.Lerp(previousFixedData.RealSpeed, currentFixedData.RealSpeed, alpha);
+						_renderData.RealVelocity    = Vector3.Lerp(previousFixedData.RealVelocity, currentFixedData.RealVelocity, alpha);
 					}
 				}
 
-				CacheProcessors(_renderData);
-				ProcessStage(EKCCStage.Interpolate, _renderData, _interpolate);
+				ProcessStage(EKCCStage.OnInterpolate, _renderData, _onInterpolate);
 			}
 
-			SynchronizeTransform(_renderData, true, true);
+			SynchronizeTransform(_renderData, true, true, true);
 
 			_lastRenderPosition = _renderData.TargetPosition;
 			_lastRenderTime     = _renderData.Time;
@@ -1699,8 +1922,14 @@ namespace Fusion.KCC
 			_debug.RenderUpdate(this);
 		}
 
-		private void UpdatePredictionError()
+		private void UpdatePredictionCorrection()
 		{
+			if (_activeFeatures.Has(EKCCFeature.PredictionCorrection) == false)
+			{
+				_predictionError = default;
+				return;
+			}
+
 			if (_renderData.Frame == _fixedData.Frame)
 			{
 				KCCData current = GetHistory(_renderData.Tick);
@@ -1710,10 +1939,19 @@ namespace Fusion.KCC
 					{
 						KCCData previous = GetHistory(current.Tick - 1);
 						if (previous == null)
+						{
+							_predictionError = Vector3.Lerp(_predictionError, Vector3.zero, 20.0f * Time.deltaTime);
 							break;
+						}
 
 						if (_lastRenderTime >= previous.Time)
 						{
+							if (current.HasTeleported == true || previous.HasTeleported == true)
+							{
+								_predictionError = default;
+								break;
+							}
+
 							float alpha = (_lastRenderTime - previous.Time) / (current.Time - previous.Time);
 							Vector3 expectedRenderPosition = Vector3.Lerp(previous.TargetPosition, current.TargetPosition, alpha);
 
@@ -1740,11 +1978,6 @@ namespace Fusion.KCC
 						current = previous;
 					}
 				}
-
-				if (_debug.ShowPath == true)
-				{
-					UnityEngine.Debug.DrawLine(_fixedData.TargetPosition, _renderData.TargetPosition, Color.blue, _debug.DisplayTime);
-				}
 			}
 			else
 			{
@@ -1757,18 +1990,13 @@ namespace Fusion.KCC
 				_renderData.BasePosition    += _predictionError;
 				_renderData.DesiredPosition += _predictionError;
 				_renderData.TargetPosition  += _predictionError;
-
-				if (_debug.ShowPath == true)
-				{
-					UnityEngine.Debug.DrawLine(_lastRenderPosition, _renderData.TargetPosition, Color.magenta, _debug.DisplayTime);
-				}
 			}
 		}
 
 		private void Move(KCCData data)
 		{
 			_activeStage    = EKCCStage.None;
-			_activeFeatures = EKCCFeatures.All;
+			_activeFeatures = _settings.Features;
 
 			float   baseTime            = data.Time;
 			float   baseDeltaTime       = data.DeltaTime;
@@ -1784,13 +2012,8 @@ namespace Fusion.KCC
 
 			if (_settings.Shape == EKCCShape.None)
 			{
-				RemoveAllCollisions(data);
+				ForceRemoveAllCollisions(data);
 				return;
-			}
-
-			if (_debug.TraceStage != EKCCStage.None)
-			{
-				_debug.ProcessorsStack.Clear();
 			}
 
 			CacheProcessors(data);
@@ -1813,8 +2036,9 @@ namespace Fusion.KCC
 			}
 
 			bool  hasFinished           = false;
-			float maxDeltaMagnitude     = _settings.Radius * 0.85f;
-			float optimalDeltaMagnitude = _settings.Radius * 0.75f;
+			float radiusMultiplier      = Mathf.Clamp(_settings.CCDRadiusMultiplier, 0.25f, 0.75f);
+			float maxDeltaMagnitude     = _settings.Radius * (radiusMultiplier + 0.1f);
+			float optimalDeltaMagnitude = _settings.Radius * radiusMultiplier;
 
 			while (hasFinished == false && data.HasTeleported == false)
 			{
@@ -1845,6 +2069,12 @@ namespace Fusion.KCC
 
 				ProcessPhysicsQuery(data);
 				UpdateCollisions(data);
+
+				if (data.HasTeleported == true)
+				{
+					UpdateTrackedColliders(data);
+					UpdateCollisions(data);
+				}
 			}
 
 			data.Time                = baseTime;
@@ -1855,13 +2085,20 @@ namespace Fusion.KCC
 			data.WasSteppingUp       = wasSteppingUp;
 			data.WasSnappingToGround = wasSnappingToGround;
 
-			if (data.HasTeleported == false)
+			bool hasTeleported = data.HasTeleported;
+			if (hasTeleported == false)
 			{
 				data.RealVelocity = (data.TargetPosition - data.BasePosition) / data.DeltaTime;
 				data.RealSpeed    = data.RealVelocity.magnitude;
 			}
 
-			ProcessStage(EKCCStage.Stay, data, _stay);
+			ProcessStage(EKCCStage.OnStay, data, _onStay);
+
+			if (hasTeleported == false && data.HasTeleported == true)
+			{
+				UpdateTrackedColliders(data);
+				UpdateCollisions(data);
+			}
 
 			_activeStage = EKCCStage.None;
 		}
@@ -1898,7 +2135,7 @@ namespace Fusion.KCC
 			{
 				OverlapCapsule(_extendedOverlapInfo, data, data.TargetPosition, _settings.Radius, _settings.Height, _settings.Radius, _settings.CollisionLayerMask, QueryTriggerInteraction.Collide);
 
-				_extendedOverlapInfo.ToggleConvexMeshes(false);
+				_extendedOverlapInfo.ToggleConvexMeshColliders(false);
 
 				data.TargetPosition = DepenetrateColliders(_extendedOverlapInfo, data, data.BasePosition, data.TargetPosition, data.HasJumped == false, 3);
 
@@ -1924,7 +2161,7 @@ namespace Fusion.KCC
 					TrySnapToGround(data);
 				}
 
-				_extendedOverlapInfo.ToggleConvexMeshes(true);
+				_extendedOverlapInfo.ToggleConvexMeshColliders(true);
 
 				if (_extendedOverlapInfo.AllWithinExtent() == true)
 				{
@@ -1932,11 +2169,16 @@ namespace Fusion.KCC
 				}
 				else
 				{
-					OverlapCapsule(_trackOverlapInfo, data, data.TargetPosition, _settings.Radius, _settings.Height, _settings.Extent, _settings.CollisionLayerMask, QueryTriggerInteraction.Collide);
+					UpdateTrackedColliders(data);
 				}
 			}
 
 			ProcessStage(EKCCStage.ProcessPhysicsQuery, data, _processPhysicsQuery);
+		}
+
+		private void UpdateTrackedColliders(KCCData data)
+		{
+			OverlapCapsule(_trackOverlapInfo, data, data.TargetPosition, _settings.Radius, _settings.Height, _settings.Extent, _settings.CollisionLayerMask, QueryTriggerInteraction.Collide);
 		}
 
 		private Vector3 DepenetrateColliders(KCCOverlapInfo overlapInfo, KCCData data, Vector3 basePosition, Vector3 targetPosition, bool probeGrounding, int maxSubSteps)
@@ -2463,7 +2705,7 @@ namespace Fusion.KCC
 			if (_sharedOverlapInfo.ColliderHitCount == 0)
 				return;
 
-			_sharedOverlapInfo.ToggleConvexMeshes(false);
+			_sharedOverlapInfo.ToggleConvexMeshColliders(false);
 
 			Vector3 targetGroundedPosition   = data.TargetPosition;
 			Vector3 penetrationPositionDelta = new Vector3(0.0f, -penetrationDelta, 0.0f);
@@ -2509,7 +2751,7 @@ namespace Fusion.KCC
 				}
 			}
 
-			_sharedOverlapInfo.ToggleConvexMeshes(true);
+			_sharedOverlapInfo.ToggleConvexMeshColliders(true);
 		}
 
 		private static void CalculateGroundProperties(KCCData data)
@@ -2551,7 +2793,7 @@ namespace Fusion.KCC
 			{
 				hitCollider = hitColliders[i];
 
-				if (ResolvePhysicsQueryCollision(data, hitCollider) == true)
+				if (IsValidHitCollider(data, hitCollider) == true)
 				{
 					overlapInfo.AddHit(hitCollider);
 				}
@@ -2580,7 +2822,7 @@ namespace Fusion.KCC
 			{
 				raycastHit = raycastHits[i];
 
-				if (ResolvePhysicsQueryCollision(data, raycastHit.collider) == true)
+				if (IsValidHitCollider(data, raycastHit.collider) == true)
 				{
 					raycastInfo.AddHit(raycastHit);
 				}
@@ -2610,7 +2852,7 @@ namespace Fusion.KCC
 			{
 				raycastHit = raycastHits[i];
 
-				if (ResolvePhysicsQueryCollision(data, raycastHit.collider) == true)
+				if (IsValidHitCollider(data, raycastHit.collider) == true)
 				{
 					raycastInfo.AddHit(raycastHit);
 				}
@@ -2667,7 +2909,7 @@ namespace Fusion.KCC
 
 			for (int i = 0; i < removeCollisionsCount; ++i)
 			{
-				RemoveCollision(data, _removeCollisions[i]);
+				RemoveCollision(data, _removeCollisions[i], false);
 			}
 
 			for (int i = 0; i < addCollisionsCount; ++i)
@@ -2685,6 +2927,8 @@ namespace Fusion.KCC
 				return;
 
 			IKCCInteractionProvider interactionProvider = collisionObject.GetComponentNoAlloc<IKCCInteractionProvider>();
+			if (interactionProvider != null && interactionProvider.CanStartInteraction(this, data) == false)
+				return;
 
 			KCCCollision collision = data.Collisions.Add(networkObject, interactionProvider, collisionCollider);
 			if (collision.Processor != null)
@@ -2698,8 +2942,19 @@ namespace Fusion.KCC
 			}
 		}
 
-		private void RemoveCollision(KCCData data, KCCCollision collision)
+		private void RemoveCollision(KCCData data, KCCCollision collision, bool forceRemove)
 		{
+			bool removeCollision = true;
+
+			IKCCInteractionProvider interactionProvider = collision.Provider;
+			if (interactionProvider != null)
+			{
+				removeCollision = interactionProvider.CanStopInteraction(this, data);
+			}
+
+			if (removeCollision == false && forceRemove == false)
+				return;
+
 			if (OnCollisionExit != null)
 			{
 				try { OnCollisionExit(this, collision); } catch (Exception exception) { UnityEngine.Debug.LogException(exception); }
@@ -2713,17 +2968,28 @@ namespace Fusion.KCC
 			data.Collisions.Remove(collision);
 		}
 
-		private void RemoveAllCollisions(KCCData data)
+		private void ForceRemoveAllCollisions(KCCData data)
 		{
 			List<KCCCollision> collisions = data.Collisions.All;
 			while (collisions.Count > 0)
 			{
-				RemoveCollision(data, collisions[collisions.Count - 1]);
+				RemoveCollision(data, collisions[collisions.Count - 1], true);
 			}
 		}
 
-		private void RemoveModifier(KCCData data, KCCModifier modifier)
+		private void RemoveModifier(KCCData data, KCCModifier modifier, bool forceRemove)
 		{
+			bool removeModifier = true;
+
+			IKCCInteractionProvider interactionProvider = modifier.Provider;
+			if (interactionProvider != null)
+			{
+				removeModifier = interactionProvider.CanStopInteraction(this, data);
+			}
+
+			if (removeModifier == false && forceRemove == false)
+				return;
+
 			IKCCProcessor processor = modifier.Processor;
 
 			if (data.Modifiers.Remove(modifier) == true)
@@ -2735,18 +3001,18 @@ namespace Fusion.KCC
 			}
 		}
 
-		private void RemoveAllModifiers(KCCData data)
+		private void ForceRemoveAllModifiers(KCCData data)
 		{
 			List<KCCModifier> modifiers = data.Modifiers.All;
 			while (modifiers.Count > 0)
 			{
-				RemoveModifier(data, modifiers[modifiers.Count - 1]);
+				RemoveModifier(data, modifiers[modifiers.Count - 1], true);
 			}
 		}
 
 		private void OnProcessorAdded(KCCData data, IKCCProcessor processor)
 		{
-			try { processor.Enter(this, data); } catch (Exception exception) { UnityEngine.Debug.LogException(exception); }
+			try { processor.OnEnter(this, data); } catch (Exception exception) { UnityEngine.Debug.LogException(exception); }
 		}
 
 		private void OnProcessorRemoved(KCCData data, IKCCProcessor processor)
@@ -2767,20 +3033,49 @@ namespace Fusion.KCC
 				}
 			}
 
-			try { processor.Exit(this, data); } catch (Exception exception) { UnityEngine.Debug.LogException(exception); }
+			try { processor.OnExit(this, data); } catch (Exception exception) { UnityEngine.Debug.LogException(exception); }
 		}
 
-		private void SynchronizeTransform(KCCData data, bool synchronizePosition, bool synchronizeRotation)
+		private void SynchronizeTransform(KCCData data, bool synchronizePosition, bool synchronizeRotation, bool useAntiJitter)
 		{
 			if (synchronizePosition == true)
 			{
+				_rigidbody.position = data.TargetPosition;
+
+				Vector3 targetPosition = data.TargetPosition;
+
+				if (useAntiJitter == true && _activeFeatures.Has(EKCCFeature.AntiJitter) == true && _settings.AntiJitterDistance.IsZero() == false)
+				{
+					Vector3 targetDelta = targetPosition - _lastAntiJitterPosition;
+					if (targetDelta.sqrMagnitude < _settings.TeleportThreshold)
+					{
+						targetPosition = _lastAntiJitterPosition;
+
+						float distanceY = Mathf.Abs(targetDelta.y);
+						if (distanceY > 0.000001f)
+						{
+							targetPosition.y += targetDelta.y * Mathf.Clamp01((distanceY - _settings.AntiJitterDistance.y) / distanceY);
+						}
+
+						Vector3 targetDeltaXZ = targetDelta.OnlyXZ();
+
+						float distanceXZ = Vector3.Magnitude(targetDeltaXZ);
+						if (distanceXZ > 0.000001f)
+						{
+							targetPosition += targetDeltaXZ * Mathf.Clamp01((distanceXZ - _settings.AntiJitterDistance.x) / distanceXZ);
+						}
+					}
+
+					_lastAntiJitterPosition = targetPosition;
+				}
+
 				if (synchronizeRotation == true)
 				{
-					_transform.SetPositionAndRotation(data.TargetPosition, data.TransformRotation);
+					_transform.SetPositionAndRotation(targetPosition, data.TransformRotation);
 				}
 				else
 				{
-					_transform.position = data.TargetPosition;
+					_transform.position = targetPosition;
 				}
 			}
 			else
@@ -2808,7 +3103,7 @@ namespace Fusion.KCC
 			 return Physics.defaultPhysicsScene;
 		}
 
-		private bool ResolvePhysicsQueryCollision(KCCData data, Collider hitCollider)
+		private bool IsValidHitCollider(KCCData data, Collider hitCollider)
 		{
 			if (hitCollider == _collider.Collider)
 				return false;
@@ -2886,8 +3181,6 @@ namespace Fusion.KCC
 		{
 			DestroyUpdater();
 
-			LocalProcessors.Clear();
-
 			_debug.SetDefaults();
 
 			_fixedData.Clear();
@@ -2907,21 +3200,28 @@ namespace Fusion.KCC
 			_stageProcessors.Clear();
 			_cachedProcessors.Clear();
 			_cachedProcessorStages.Clear();
+			_localProcessors.Clear();
 
 			_cachedProcessorCount = default;
 
 			_collider.Destroy();
 
+			_rigidbody.isKinematic = true;
+
 			_settings.CopyFromOther(_defaultSettings);
 
-			_driver             = EKCCDriver.None;
-			_activeFeatures     = EKCCFeatures.None;
-			_hasManualUpdate    = default;
-			_hasInputAuthority  = default;
-			_hasStateAuthority  = default;
-			_lastRenderTime     = default;
-			_lastRenderPosition = default;
-			_predictionError    = default;
+			_driver                   = EKCCDriver.None;
+			_activeStage              = EKCCStage.None;
+			_activeFeatures           = EKCCFeatures.None;
+			_hasManualUpdate          = default;
+			_hasInputAuthority        = default;
+			_hasStateAuthority        = default;
+			_lastRenderTime           = default;
+			_lastRenderPosition       = default;
+			_lastRenderInitialization = default;
+			_lastFixedInitialization  = default;
+			_lastAntiJitterPosition   = default;
+			_predictionError          = default;
 		}
 
 		private void ProcessStage(EKCCStage stage, KCCData data, Action<IKCCProcessor, KCC, KCCData> method)
@@ -2938,11 +3238,8 @@ namespace Fusion.KCC
 
 			for (_stageProcessorIndex = 0; _stageProcessorIndex < _cachedProcessorCount; ++_stageProcessorIndex)
 			{
-				if (stage != EKCCStage.Stay && stage != EKCCStage.Interpolate)
-				{
-					if (_cachedProcessorStages[_stageProcessorIndex].Has(stage) == false)
-						continue;
-				}
+				if (_cachedProcessorStages[_stageProcessorIndex].Has(stage) == false)
+					continue;
 
 				IKCCProcessor processor = _stageProcessors[_stageProcessorIndex];
 				if (object.ReferenceEquals(processor, null) == true)
@@ -2966,22 +3263,50 @@ namespace Fusion.KCC
 			_activeStage = EKCCStage.None;
 		}
 
+		private void ProcessStage<T>(EKCCStage stage, KCCData data, Action<IKCCProcessor, KCC, KCCData, T> method, T userData)
+		{
+			_activeStage = stage;
+
+			bool traceProcessors = _debug.TraceStage == stage;
+			if (traceProcessors == true)
+			{
+				_debug.ProcessorsStack.Clear();
+			}
+
+			Array.Copy(_cachedProcessors, _stageProcessors, _cachedProcessorCount);
+
+			for (_stageProcessorIndex = 0; _stageProcessorIndex < _cachedProcessorCount; ++_stageProcessorIndex)
+			{
+				if (_cachedProcessorStages[_stageProcessorIndex].Has(stage) == false)
+					continue;
+
+				IKCCProcessor processor = _stageProcessors[_stageProcessorIndex];
+				if (object.ReferenceEquals(processor, null) == true)
+					continue;
+
+				try
+				{
+					method(processor, this, data, userData);
+				}
+				catch (Exception exception)
+				{
+					UnityEngine.Debug.LogException(exception);
+				}
+
+				if (traceProcessors == true)
+				{
+					_debug.ProcessorsStack.Add(processor);
+				}
+			}
+
+			_activeStage = EKCCStage.None;
+		}
+
 		private void CacheProcessors(KCCData data)
 		{
 			_cachedProcessorCount = 0;
 
-			List<KCCProcessor> settingsProcessors = _settings.Processors;
-			for (int i = 0, processorCount = settingsProcessors.Count; i < processorCount; ++i)
-			{
-				IKCCProcessor processor = settingsProcessors[i];
-				if (processor != null)
-				{
-					_cachedProcessors[_cachedProcessorCount] = processor;
-					++_cachedProcessorCount;
-				}
-			}
-
-			List<IKCCProcessor> localProcessors = LocalProcessors;
+			List<IKCCProcessor> localProcessors = _localProcessors;
 			for (int i = 0, processorCount = localProcessors.Count; i < processorCount; ++i)
 			{
 				IKCCProcessor processor = localProcessors[i];
@@ -3036,24 +3361,6 @@ namespace Fusion.KCC
 			historyData.CopyFromOther(_fixedData);
 		}
 
-		private static void StoreTransientData(KCCData transientData, KCCData stateData)
-		{
-			transientData.ExternalVelocity     = stateData.ExternalVelocity;
-			transientData.ExternalAcceleration = stateData.ExternalAcceleration;
-			transientData.ExternalImpulse      = stateData.ExternalImpulse;
-			transientData.ExternalForce        = stateData.ExternalForce;
-			transientData.JumpImpulse          = stateData.JumpImpulse;
-		}
-
-		private static void RestoreTransientData(KCCData transientData, KCCData stateData)
-		{
-			stateData.ExternalVelocity     -= transientData.ExternalVelocity;
-			stateData.ExternalAcceleration -= transientData.ExternalAcceleration;
-			stateData.ExternalImpulse      -= transientData.ExternalImpulse;
-			stateData.ExternalForce        -= transientData.ExternalForce;
-			stateData.JumpImpulse          -= transientData.JumpImpulse;
-		}
-
 		private static void SortProcessors(IKCCProcessor[] processors, int count)
 		{
 			if (count <= 1)
@@ -3085,6 +3392,53 @@ namespace Fusion.KCC
 					{
 						processors[leftIndex]  = rightProcessor;
 						processors[rightIndex] = leftProcessor;
+
+						isSorted = false;
+					}
+
+					++leftIndex;
+					++rightIndex;
+				}
+			}
+		}
+
+		private static void SortProcessors<T>(IList<T> processors) where T : class
+		{
+			int count = processors.Count;
+			if (count <= 1)
+				return;
+
+			bool          isSorted = false;
+			int           leftIndex;
+			int           rightIndex;
+			T             leftObject;
+			IKCCProcessor leftProcessor;
+			T             rightObject;
+			IKCCProcessor rightProcessor;
+
+			while (isSorted == false)
+			{
+				isSorted = true;
+
+				leftIndex     = 0;
+				rightIndex    = 1;
+				leftObject    = processors[leftIndex];
+				leftProcessor = (IKCCProcessor)leftObject;
+
+				while (rightIndex < count)
+				{
+					rightObject    = processors[rightIndex];
+					rightProcessor = (IKCCProcessor)rightObject;
+
+					if (leftProcessor.Priority >= rightProcessor.Priority)
+					{
+						leftObject    = rightObject;
+						leftProcessor = rightProcessor;
+					}
+					else
+					{
+						processors[leftIndex]  = rightObject;
+						processors[rightIndex] = leftObject;
 
 						isSorted = false;
 					}

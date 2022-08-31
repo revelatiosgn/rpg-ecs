@@ -16,10 +16,16 @@ namespace Fusion.KCC
 
 		private KCCNetworkContext     _networkContext;
 		private IKCCNetworkProperty[] _networkProperties;
-		private float                 _positionReadAccuracy;
-		private float                 _positionWriteAccuracy;
-		private float                 _rotationReadAccuracy;
-		private float                 _rotationWriteAccuracy;
+		private KCCNetworkProperties  _defaultProperties;
+
+		private static float _defaultPositionReadAccuracy = float.NaN;
+
+		// PUBLIC METHODS
+
+		public unsafe Vector3 ReadNetworkPosition(int* ptr)
+		{
+			return _defaultProperties.ReadPosition(ptr);
+		}
 
 		// NetworkAreaOfInterestBehaviour INTERFACE
 
@@ -112,11 +118,11 @@ namespace Fusion.KCC
 
 			if (ticks > 0)
 			{
-				Vector3 fromPosition = KCCNetworkUtility.ReadVector3(basePtrFrom, _positionReadAccuracy);
-				Vector3 toPosition   = KCCNetworkUtility.ReadVector3(basePtrTo,   _positionReadAccuracy);
+				Vector3 fromPosition = KCCNetworkUtility.ReadVector3(basePtrFrom, _defaultPositionReadAccuracy);
+				Vector3 toPosition   = KCCNetworkUtility.ReadVector3(basePtrTo,   _defaultPositionReadAccuracy);
 
 				Vector3 positionDifference = toPosition - fromPosition;
-				if (positionDifference.sqrMagnitude > ticks * ticks)
+				if (positionDifference.sqrMagnitude > _settings.TeleportThreshold * _settings.TeleportThreshold * ticks * ticks)
 				{
 					_fixedData.TargetPosition = toPosition;
 					_fixedData.RealVelocity   = Vector3.zero;
@@ -138,13 +144,30 @@ namespace Fusion.KCC
 			_renderData.CopyFromOther(_fixedData);
 		}
 
-		partial void InitializeUserNetworkProperties(KCCNetworkContext networkContext, List<IKCCNetworkProperty> networkProperties);
-		partial void InterpolateUserNetworkData(InterpolationData interpolationData);
+		private void RestoreHistoryData(KCCData historyData)
+		{
+			// Some values can be synchronized from user code.
+			// We have to ensure these properties are in correct state with other properties.
 
-		// PRIVATE METHODS
+			if (_fixedData.IsGrounded == true)
+			{
+				// Reset IsGrounded to history state, otherwise using GroundNormal and other ground related properties leads to undefined behavior and NaN propagation.
+				// This has effect only if IsGrounded is synchronized over network.
+				_fixedData.IsGrounded = historyData.IsGrounded;
+			}
+
+			// User history data restoration.
+
+			RestoreUserHistoryData(historyData);
+		}
 
 		private void InitializeNetworkProperties()
 		{
+			if (_defaultPositionReadAccuracy.IsNaN() == true)
+			{
+				_defaultPositionReadAccuracy = new Accuracy(AccuracyDefaults.POSITION).Value;
+			}
+
 			if (_networkContext != null)
 				return;
 
@@ -152,44 +175,24 @@ namespace Fusion.KCC
 			_networkContext.KCC      = this;
 			_networkContext.Settings = _settings;
 
-			_positionReadAccuracy  = new Accuracy(AccuracyDefaults.POSITION).Value;
-			_positionWriteAccuracy = _positionReadAccuracy > 0.0f ? 1.0f / _positionReadAccuracy : 0.0f;
-			_rotationReadAccuracy  = new Accuracy(AccuracyDefaults.ROTATION).Value;
-			_rotationWriteAccuracy = _rotationReadAccuracy > 0.0f ? 1.0f / _rotationReadAccuracy : 0.0f;
+			_defaultProperties = new KCCNetworkProperties(_networkContext, _settings.PositionAccuracy, _settings.RotationAccuracy);
 
-			List<IKCCNetworkProperty> properties = new List<IKCCNetworkProperty>(32)
-			{
-				new KCCNetworkProperties(_networkContext, _positionReadAccuracy, _rotationReadAccuracy),
-				new KCCNetworkCollisions(_networkContext, 8),
-				new KCCNetworkModifiers (_networkContext, 8),
-				new KCCNetworkIgnores   (_networkContext, 8),
-			};
+			List<IKCCNetworkProperty> properties = new List<IKCCNetworkProperty>(32);
+			properties.Add(_defaultProperties);
+
+			if (_settings.MaxNetworkedCollisions > 0) { properties.Add(new KCCNetworkCollisions(_networkContext, _settings.MaxNetworkedCollisions)); }
+			if (_settings.MaxNetworkedModifiers  > 0) { properties.Add(new KCCNetworkModifiers (_networkContext, _settings.MaxNetworkedModifiers));  }
+			if (_settings.MaxNetworkedIgnores    > 0) { properties.Add(new KCCNetworkIgnores   (_networkContext, _settings.MaxNetworkedIgnores));    }
 
 			InitializeUserNetworkProperties(_networkContext, properties);
 
 			_networkProperties = properties.ToArray();
 		}
 
-		private Vector3 GetQuantizedPosition(Vector3 position)
-		{
-			if (_positionReadAccuracy <= 0.0f || _positionWriteAccuracy <= 0.0f)
-				return position;
+		// PARTIAL METHODS
 
-			Vector3 quantizedPosition;
-
-			quantizedPosition.x = (position.x < 0.0f ? (int)((position.x * _positionWriteAccuracy) - 0.5f) : (int)((position.x * _positionWriteAccuracy) + 0.5f)) * _positionReadAccuracy;
-			quantizedPosition.y = (position.y < 0.0f ? (int)((position.y * _positionWriteAccuracy) - 0.5f) : (int)((position.y * _positionWriteAccuracy) + 0.5f)) * _positionReadAccuracy;
-			quantizedPosition.z = (position.z < 0.0f ? (int)((position.z * _positionWriteAccuracy) - 0.5f) : (int)((position.z * _positionWriteAccuracy) + 0.5f)) * _positionReadAccuracy;
-
-			return quantizedPosition;
-		}
-
-		private float GetQuantizedRotation(float angle)
-		{
-			if (_rotationReadAccuracy <= 0.0f || _rotationWriteAccuracy <= 0.0f)
-				return angle;
-
-			return (angle < 0.0f ? (int)((angle * _rotationWriteAccuracy) - 0.5f) : (int)((angle * _rotationWriteAccuracy) + 0.5f)) * _rotationReadAccuracy;
-		}
+		partial void InitializeUserNetworkProperties(KCCNetworkContext networkContext, List<IKCCNetworkProperty> networkProperties);
+		partial void InterpolateUserNetworkData(InterpolationData interpolationData);
+		partial void RestoreUserHistoryData(KCCData historyData);
 	}
 }

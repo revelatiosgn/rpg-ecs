@@ -1,6 +1,76 @@
 Photon Fusion KCC Addon - Release History
 
-Last tested with Fusion SDK 0.13.0 RC Nightly Build 423
+Last tested with Fusion SDK 1.1.2 Build 545
+
+Version 1.1.6
+- Compatibility with Fusion SDK 1.1.2 Build 545
+
+Version 1.1.5
+- Added more KCC API methods for getting modifiers/interactions/processors of type T. Processors can be sorted by priority.
+- Added support for user controlled interactions by overriding CanStartInteraction() / CanStopInteraction() in processors. This affects modifiers and collisions.
+- Added extra collision query (no depenetration) if a teleport from ProcessPhysicsQuery(), OnEnter(), OnExit() and OnStay() is detected. This may trigger additional OnEnter() and OnExit() calls.
+- Added CCD Radius Multiplier to settings. This property controls maximum distance the KCC moves in single CCD step. Valid range is 25% - 75% (default).
+- Added anti-jitter feature - the KCC checks minimum position delta (configurable in settings) to move when synchronizing Transform with KCCData.TargetPosition ("follow a target"). KCCData calculated in Fixed and Render updates remain unaffected.
+- Added teleport threshold to settings (was hardcoded). This property defines minimum distance the KCC must move in single tick to treat the movement as instant. Affects interpolation and other KCC features.
+- Added KCC.TransientData. This partial data structure is used to to store/restore and process data from/to KCCData before/after KCC moves in fixed/render update.
+
+Version 1.1.4
+- Input and state authority write local state to network buffer after each tick. Previously it was done in IAfterAllTicks.AfterAllTicks(). This change fixes reading interpolation data on input authority.
+- Maximum count of synchronized collisions/modifiers/ignores added to settings.
+
+Version 1.1.3
+- Added KCC_DISABLE_TERRAIN script define to remove support of TerrainCollider. This allows removing built-in Terrain Physics package from project.
+- Added KCC.ReadNetworkPosition(int* ptr) to get networked position from custom memory location (for example using InterpolationData). This method respects KCCSettings.PositionAccuracy.
+- Default KCCData local history decreased from 180 to 60 ticks. The value was too high.
+- EKCCStage.Stay changed to EKCCStage.OnStay.
+- EKCCStage.Interpolate changed to EKCCStage.OnInterpolate.
+- IKCCProcessor.Enter() changed to IKCCProcessor.OnEnter().
+- IKCCProcessor.Exit() changed to IKCCProcessor.OnExit().
+- IKCCProcessor.Stay() changed to IKCCProcessor.OnStay().
+- IKCCProcessor.Interpolate() changed to IKCCProcessor.OnInterpolate().
+- Execution of IKCCProcessor.ProcessUserLogic() follows same rules as execution any other stage (processors can be suppressed).
+- Added EKCCStages.OnStay, EKCCStages.OnInterpolate and EKCCStages.ProcessUserLogic - these now follow same rules as other stages (can be included/excluded in IKCCProcessor.GetValidStages()).
+- Added BaseKCCProcessor - this is an optimized, local-only processor type which must be manually registered using KCC.AddLocalProcessor(). It doesn't require NetworkObject and cannot be synchronized over network.
+- Performance optimizations.
+
+BREAKING CHANGES
+- Overriding processor methods OnStay(), OnInterpolate() and ProcessUserLogic() now requires appropriate stages to be returned in GetValidStages().
+
+Version 1.1.2
+- Fixed: MeshCollider.convex is disabled during physics query only on read/write enabled meshes.
+- Removed restore of full precision position and rotation from history on input authority. Origin is always quantized so there's no way to reduce prediction error except increasing accuracy.
+- Added custom position and rotation accuracy to KCCSettings. Position accuracy cannot be less accurate (clamped internally) than default position accuracy.
+- Fixed IKCCProcessor.OnEnter() not called when initializing local processors.
+
+Version 1.1.1
+- Fixed: MeshCollider.convex is disabled during physics query only on colliders (trigger are not affected).
+- IKCCProcessor and base processor implementations are now partial to support more advanced extensions.
+- KCC.Initialize(EKCCDriver.None) forwards the call to KCC.Deinitialize().
+- Fixed delta time calculation in first render update after fixed update with EKCCRenderBehavior.Interpolate.
+- Added new KCC processor stage - ProcessUserLogic() - to run custom logic before or after KCC updates. Can be executed multiple times by calling KCC.ProcessUserLogic() and supports user data passed as argument (object).
+- Fixed prediction correction on teleport.
+
+Version 1.1.0
+- Added KCC.IsValidHitCollider() for colliders filtering after custom overlap/shapecast query outside of KCC. This method uses same filtering as physics query stage.
+
+Version 1.0.9
+- KCC.LocalProcessors is now read-only and modified exclusively by KCC.AddLocalProcessor() and KCC.RemoveLocalProcessor().
+- Calling KCC.AddLocalProcessor() invokes IKCCProcessor.Enter() on input and state authority.
+- Calling KCC.RemoveLocalProcessor() invokes IKCCProcessor.Exit() on input and state authority.
+- KCCSettings.Processors underlying type changed from List<KCCProcessor> to KCCProcessor[]. This collection is supposed to be read-only at runtime.
+- KCCSettings.Processors are now added to KCC.LocalProcessors upon initialization using methods mentioned above, IKCCProcessor.Enter() / IKCCProcessor.Exit() will be invoked on processors.
+- Disabled stage caching on proxies - IKCCProcessor.GetValidStages() won't be called.
+- Added KCC.EnforceFeature() for API completeness - features can be disabled by default and only force execution when needed.
+- Fixed exceptions from KCC.OnDestroy() when stopping play mode.
+
+Version 1.0.8
+- KCC now requires kinematic Rigidbody.
+- Added default KCC Features to settings (networked).
+- Added Prediction Correction as feature (can be suppressed).
+- Added KCC.SynchronizeTransform() for explicit synchronization.
+- IKCCProcessor.SetInputProperties() is now called also in Interpolate render behavior.
+- Added partial KCC.RestoreUserHistoryData() for custom data restoration from local history (input authority only).
+- Safe restore of KCCData.IsGrounded from local history if it's synchronized over network and other ground properties are not calculated.
 
 Version 1.0.7
 - Compatibility with Fusion SDK 0.13.0 RC Nightly Build 423 (breaking changes).

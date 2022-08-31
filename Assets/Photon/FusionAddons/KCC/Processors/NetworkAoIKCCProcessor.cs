@@ -8,7 +8,7 @@ namespace Fusion.KCC
 	/// </summary>
 	[DisallowMultipleComponent]
 	[RequireComponent(typeof(NetworkObject))]
-	public abstract class NetworkAoIKCCProcessor : NetworkAreaOfInterestBehaviour, IKCCProcessor, IKCCProcessorProvider
+	public abstract partial class NetworkAoIKCCProcessor : NetworkAreaOfInterestBehaviour, IKCCProcessor, IKCCProcessorProvider
 	{
 		// NetworkAoIKCCProcessor INTERFACE
 
@@ -19,6 +19,7 @@ namespace Fusion.KCC
 
 		/// <summary>
 		/// Used to filter <c>KCCProcessor</c> stage method calls. Executed on KCC input and state authority only. Returns <c>EKCCStages.All</c> by default.
+		/// EKCCStage which is not present in EKCCStages is always valid.
 		/// </summary>
 		public virtual EKCCStages GetValidStages(KCC kcc, KCCData data)
 		{
@@ -103,33 +104,29 @@ namespace Fusion.KCC
 		{
 		}
 
-		// IKCCProcessor INTERFACE
-
-		void IKCCProcessor.Enter(KCC kcc, KCCData data)
+		/// <summary>
+		/// Dedicated stage to process custom logic. Can be executed multiple times before or after KCC updates. Supports user data passed as parameter.
+		/// Invoked from KCC.ProcessUserLogic(). Cannot be called when other stage is active. Executed on all (KCC input/state authority and KCC proxy).
+		/// </summary>
+		public virtual void ProcessUserLogic(KCC kcc, KCCData data, object userData)
 		{
-			OnEnter(kcc, data);
 		}
 
-		void IKCCProcessor.Exit(KCC kcc, KCCData data)
-		{
-			OnExit(kcc, data);
-		}
+		// IKCCInteractionProvider INTERFACE
 
-		void IKCCProcessor.Stay(KCC kcc, KCCData data)
-		{
-			OnStay(kcc, data);
-		}
+		/// <summary>
+		/// Used to control start of the interaction with KCC. Executed on KCC input and state authority only.
+		/// </summary>
+		public virtual bool CanStartInteraction(KCC kcc, KCCData data) => true;
 
-		void IKCCProcessor.Interpolate(KCC kcc, KCCData data)
-		{
-			OnInterpolate(kcc, data);
-		}
+		/// <summary>
+		/// Used to control end of the interaction with KCC. Executed on KCC input and state authority only.
+		/// All interactions are force stopped on despawn regardless of the return value.
+		/// </summary>
+		public virtual bool CanStopInteraction(KCC kcc, KCCData data) => true;
 
 		// IKCCProcessorProvider INTERFACE
 
-		IKCCProcessor IKCCProcessorProvider.GetProcessor()
-		{
-			return this;
-		}
+		IKCCProcessor IKCCProcessorProvider.GetProcessor() => this;
 	}
 }

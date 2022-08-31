@@ -8,7 +8,7 @@ namespace RPGGame.Gameplay
 {
     public class PlayerSpawn : SimulationBehaviour, ISpawned, IDespawned
     {
-        [SerializeField] private PlayerCharacter _playerCharacterPrefab;
+        [SerializeField] private CharactersConfig _charactersConfig;
         [SerializeField][Range(0f, 100f)] private float _spawnRadius;
 
         public void Spawned()
@@ -29,21 +29,21 @@ namespace RPGGame.Gameplay
             {
                 if (player.Object.HasStateAuthority)
                 {
-                    SpawnCharacter(player.Object.InputAuthority);
+                    SpawnCharacter(player.Object.InputAuthority, player);
                 }
             }
         }
 
-        private void SpawnCharacter(PlayerRef inputAuthority)
+        private void SpawnCharacter(PlayerRef inputAuthority, Player player)
         {
             Vector3 position = new Vector3(Random.Range(-_spawnRadius, _spawnRadius), 0f, Random.Range(-_spawnRadius, _spawnRadius));
-            PlayerCharacter playerCharacter = Runner.Spawn(_playerCharacterPrefab, position, Quaternion.identity, inputAuthority);
+            PlayerCharacter playerCharacter = Runner.Spawn(_charactersConfig.PlayerCharacterPrefabs[player.CharacterIndex], position, Quaternion.identity, inputAuthority);
         }
 
         private void PlayerSpawned(PlayerRef playerRef, Player player)
         {
             Debug.Log($"player spawned: {player.Nickname}");
-            SpawnCharacter(playerRef);
+            SpawnCharacter(playerRef, player);
         }
     }
 }

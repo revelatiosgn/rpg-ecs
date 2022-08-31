@@ -14,6 +14,9 @@ namespace RPGGame.Model
         [Networked(OnChanged = nameof(OnNicknameChanged))] 
 	    public NetworkString<_32> Nickname { get; set; }
 
+        [Networked(OnChanged = nameof(OnCharacterIndexChanged))] 
+	    public int CharacterIndex { get; set; }
+
         private static Player _local;
         public static Player Local => _local;
 
@@ -30,19 +33,31 @@ namespace RPGGame.Model
         }
 
         [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
-        public void RPC_SetNickame(NetworkString<_32> name)
+        private void RPC_SetNickame(NetworkString<_32> name)
         {
             Nickname = name;
         }
 
         public static void OnNicknameChanged(Changed<Player> changed)
         {
-            changed.Behaviour.OnNicknameChanged();
+            NetworkManager.Instance.UpdatePlayer(changed.Behaviour);
         }
 
-        private void OnNicknameChanged()
+        public void SetCharacterIndex(int characterIndex)
         {
-            NetworkManager.Instance.UpdatePlayer(this);
+            if (HasInputAuthority)
+                RPC_SetCharacterIndex(characterIndex);
+        }
+
+        [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+        private void RPC_SetCharacterIndex(int characterIndex)
+        {
+            CharacterIndex = characterIndex;
+        }
+
+        public static void OnCharacterIndexChanged(Changed<Player> changed)
+        {
+            NetworkManager.Instance.UpdatePlayer(changed.Behaviour);
         }
     }
 }

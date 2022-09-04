@@ -12,16 +12,19 @@ namespace RPGGame.Model
     public class NetworkManager : MonoBehaviour, INetworkRunnerCallbacks
     {
         [SerializeField] private NetworkRunner _networkRunner;
+        public NetworkRunner NetworkRunner => _networkRunner;
+
         [SerializeField] private Player _playerPrefab;
         [SerializeField] private NetworkSceneManagerBase _networkSceneManager;
+        [SerializeField] private AdditiveSceneLoader _additiveSceneLoader;
+        public AdditiveSceneLoader AdditiveSceneLoader => _additiveSceneLoader;
+
         [SerializeField] private bool _debugAutoconnect = false;
 
         private Dictionary<PlayerRef, Player> _players = new Dictionary<PlayerRef, Player>();
         public ICollection<Player> Players => _players.Values;
 
 	    private InputData _inputData;
-
-        public NetworkRunner NetworkRunner => _networkRunner;
 
         private static NetworkManager _instance;
         public static NetworkManager Instance => _instance;
@@ -50,14 +53,11 @@ namespace RPGGame.Model
                 if (SceneManager.GetActiveScene().buildIndex != 0)
                     SceneManager.LoadScene(0);
 
+                _additiveSceneLoader.Initialize(_networkRunner);
+
                 if (_debugAutoconnect)
                 {
-                    _networkRunner.StartGame(new StartGameArgs
-                    {
-                        GameMode = GameMode.Host,
-                        SceneManager = _networkSceneManager,
-                        SessionName = "TestSession"
-                    });
+                    JoinLobbyTask().Forget();
                 }
                 else
                 {
@@ -151,10 +151,34 @@ namespace RPGGame.Model
         public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList)
         {
             SessionListUpdated?.Invoke(sessionList);
+
+            if (_debugAutoconnect)
+            {
+                if (sessionList.Count == 0)
+                {
+                    _networkRunner.StartGame(new StartGameArgs
+                    {
+                        GameMode = GameMode.Host,
+                        SceneManager = _networkSceneManager,
+                        SessionName = "TestSession"
+                    });
+                }
+                else
+                {
+                    _networkRunner.StartGame(new StartGameArgs
+                    {
+                        GameMode = GameMode.Client,
+                        SceneManager = _networkSceneManager,
+                        SessionName = "TestSession"
+                    });
+                }
+            }
         }
 
         public void OnPlayerJoined(NetworkRunner runner, PlayerRef playerRef)
         {
+            Debug.Log("OnPlayerJoined");
+
             if (runner.IsServer)
             {
                 Player player = runner.Spawn(_playerPrefab, Vector3.zero, Quaternion.identity, playerRef);
@@ -165,6 +189,8 @@ namespace RPGGame.Model
 
         public void OnPlayerLeft(NetworkRunner runner, PlayerRef playerRef)
         {
+            Debug.Log("OnPlayerLeft");
+
             if (_players.TryGetValue(playerRef, out Player player))
 		    {
                 runner.Despawn(player.Object);

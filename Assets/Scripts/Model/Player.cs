@@ -32,6 +32,14 @@ namespace RPGGame.Model
             NetworkManager.Instance.SetPlayer(Object.InputAuthority, this);
         }
 
+        public override void Despawned(NetworkRunner runner, bool hasState)
+        {
+            if (Object.HasInputAuthority)
+            {
+                _local = null;
+            }
+        }
+
         [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
         private void RPC_SetNickame(NetworkString<_32> name)
         {

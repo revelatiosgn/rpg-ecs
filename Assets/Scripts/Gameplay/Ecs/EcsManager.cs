@@ -42,6 +42,7 @@ namespace RPGGame.Gameplay.Ecs
                 .Add(new InteractionSystem())
                 .Add(new HarvestSystem())
                 .Add(new CraftSystem())
+                .Add(new ScenePortalSystem())
                 .Inject()
                 .Init();
 

@@ -1,9 +1,12 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using Fusion;
 using Fusion.KCC;
 using RPGGame.Model;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace RPGGame.Gameplay
 {
@@ -22,6 +25,14 @@ namespace RPGGame.Gameplay
 
         private static PlayerCharacter _local;
         public static PlayerCharacter Local => _local;
+
+        [Networked(OnChanged = nameof(OnChangedSceneIndex))]
+        public int SceneIndex { get; set; }
+
+        private static void OnChangedSceneIndex(Changed<PlayerCharacter> changed)
+        {
+            Debug.Log($"OnChangedSceneIndex {changed.Behaviour.SceneIndex}");
+        }
 
         public override void Spawned()
         {
@@ -51,6 +62,20 @@ namespace RPGGame.Gameplay
             }
 
             _animator.SetFloat("MoveSpeed", _kcc.RenderData.RealSpeed);
+        }
+
+        [Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority)]
+        public void RPC_LoadScene(string sceneName)
+        {
+            if (!HasStateAuthority)
+                NetworkManager.Instance.AdditiveSceneLoader.LoadScene(sceneName);
+        }
+
+        [Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority)]
+        public void RPC_UnloadScene(string sceneName)
+        {
+            if (!HasStateAuthority)
+                NetworkManager.Instance.AdditiveSceneLoader.UnloadScene(sceneName);
         }
     }
 }

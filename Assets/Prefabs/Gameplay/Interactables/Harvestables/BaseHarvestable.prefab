@@ -130,6 +130,19 @@ MonoBehaviour:
   _interpolationDataSource: 0
   _harvestItem: {fileID: 0}
   _label: {fileID: 2741264164327060447}
+--- !u!135 &3616492403846140492
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2741264164153038863}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 2
+  m_Center: {x: 0, y: 1, z: 0}
 --- !u!114 &2741264164327060447 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2012377428232963135, guid: 084d3f0edc31da240a8d8005c5f60e96, type: 3}

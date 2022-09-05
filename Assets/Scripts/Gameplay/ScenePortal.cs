@@ -20,8 +20,7 @@ namespace RPGGame.Gameplay
         private void Awake()
         {
             _portals.Add(gameObject.name, this);
-
-            _label.text = "Scene Portal";
+            _label.text = _targetPortal;
         }
 
         private void OnDestroy()

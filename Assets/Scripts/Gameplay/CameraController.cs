@@ -11,7 +11,7 @@ namespace RPGGame.Gameplay
         [SerializeField] private float _zoomSpeed = .3f;
         [SerializeField] private float _minZoom = 0.5f;
         [SerializeField] private float _maxZoom = 3f;
-        [SerializeField] private Vector3 _cameraOffset = new Vector3(0f, 4f, -5f);
+        [SerializeField] private Vector3 _cameraOffset = new Vector3(0f, 3f, -5f);
         [SerializeField] private Vector3 _targetOffset = new Vector3(0f, 1f, 0f);
 
         private Vector3 _mousePosition;
@@ -36,11 +36,14 @@ namespace RPGGame.Gameplay
 
             if (Input.GetMouseButton(2))
             {
-                float delta = Input.mousePosition.x - _mousePosition.x;
+                Vector2 delta = Input.mousePosition - _mousePosition;
                 _mousePosition = Input.mousePosition;
 
-                if (delta != 0f)
-                    transform.Rotate(Vector3.up, delta * _rotateSpeed);
+                if (delta.x != 0f)
+                    transform.Rotate(Vector3.up, delta.x * _rotateSpeed);
+
+                if (delta.y != 0f)
+                    _cameraOffset.y = Mathf.Clamp(_cameraOffset.y - delta.y * 0.01f, 1f, 5f);
             }
             else
             {

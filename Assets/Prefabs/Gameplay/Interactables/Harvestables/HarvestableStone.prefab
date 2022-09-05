@@ -63,6 +63,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: HarvestableStone
       objectReference: {fileID: 0}
+    - target: {fileID: 3616492403846140492, guid: c79478a9a7081bf4697073db962b8a35, type: 3}
+      propertyPath: m_Radius
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 6182510946254846774, guid: c79478a9a7081bf4697073db962b8a35, type: 3}
       propertyPath: _harvestItem
       value: 

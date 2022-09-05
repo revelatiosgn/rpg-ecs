@@ -24,6 +24,7 @@ namespace RPGGame.Gameplay
             {
                 NetworkManager.Instance.AdditiveSceneLoader.LoadScene("Map_0", () => SpawnCharacters());
                 NetworkManager.Instance.AdditiveSceneLoader.LoadScene("Map_1");
+                NetworkManager.Instance.AdditiveSceneLoader.LoadScene("SmallHouse");
             }
             else
             {

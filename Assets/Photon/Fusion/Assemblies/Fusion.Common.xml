@@ -177,5 +177,20 @@
             <param name="p">integer array with size (1 &lt;&lt; RADIX)</param>
             <param name="c">integer array with size (1 &lt;&lt; RADIX) * 4</param>
         </member>
+        <member name="F:Fusion.RuntimeUnityFlagsSetup.flagsBuildFlags">
+            <summary>
+            Flags for BuildFlags
+            </summary>
+        </member>
+        <member name="F:Fusion.RuntimeUnityFlagsSetup.flagsBuildTypes">
+            <summary>
+            Flags for BuildTypes
+            </summary>
+        </member>
+        <member name="F:Fusion.RuntimeUnityFlagsSetup.flagsDotNetVersion">
+            <summary>
+            Flags for DotNetVersion
+            </summary>
+        </member>
     </members>
 </doc>

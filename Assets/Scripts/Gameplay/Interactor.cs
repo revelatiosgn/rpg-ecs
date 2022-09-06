@@ -5,6 +5,7 @@ using Fusion.KCC;
 using RPGGame.Model;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 
 namespace RPGGame.Gameplay
 {
@@ -38,9 +39,10 @@ namespace RPGGame.Gameplay
         {
             if (Object.HasInputAuthority)
             {
-                if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
+			    Mouse mouse = Mouse.current;
+                if (mouse != null && mouse.leftButton.wasReleasedThisFrame && !EventSystem.current.IsPointerOverGameObject())
                 {
-                    Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                    Ray ray = Camera.main.ScreenPointToRay(mouse.position.ReadValue());
                     if (Physics.Raycast(ray, out RaycastHit hit, 100f, _layerMask))
                     {
                         InteractableCollider collider = hit.collider.GetComponent<InteractableCollider>();

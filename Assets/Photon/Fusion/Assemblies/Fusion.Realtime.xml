@@ -4453,21 +4453,6 @@
         <member name="P:Fusion.Photon.Realtime.PhotonAppSettings.Instance">
             <summary>Serialized server settings, written by the Setup Wizard for use in ConnectUsingSettings.</summary>
         </member>
-        <member name="F:Fusion.RuntimeUnityFlagsSetup.flagsBuildFlags">
-            <summary>
-            Flags for BuildFlags
-            </summary>
-        </member>
-        <member name="F:Fusion.RuntimeUnityFlagsSetup.flagsBuildTypes">
-            <summary>
-            Flags for BuildTypes
-            </summary>
-        </member>
-        <member name="F:Fusion.RuntimeUnityFlagsSetup.flagsDotNetVersion">
-            <summary>
-            Flags for DotNetVersion
-            </summary>
-        </member>
         <member name="T:Fusion.SessionProperty">
             <summary>
             Holds a Custom Session Property value

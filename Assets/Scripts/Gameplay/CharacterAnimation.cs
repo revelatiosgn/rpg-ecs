@@ -11,9 +11,15 @@ namespace RPGGame.Gameplay
     public class CharacterAnimation : NetworkBehaviour
     {
         [SerializeField] private Animator _animator;
+        [SerializeField] private KCC _kcc;
 
 	    [Networked(OnChanged = nameof(OnChangedAnimation))]
 	    public int AnimationHash { get; set; }
+
+        public override void FixedUpdateNetwork()
+        {
+            _animator.SetFloat("MoveSpeed", _kcc.RenderData.RealSpeed);
+        }
 
         public void PlayAnimation(int animationHash)
         {

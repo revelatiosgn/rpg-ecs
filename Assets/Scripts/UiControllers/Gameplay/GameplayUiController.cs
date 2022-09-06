@@ -7,15 +7,22 @@ using Fusion.Sockets;
 using RPGGame.Gameplay.Events;
 using RPGGame.Model;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace RPGGame.UiControllers
 {
     public class GameplayUiController : MonoBehaviour
     {
+        [Header("Ui")]
         [SerializeField] private Transform _background;
         [SerializeField] private InventoryUiController _inventory;
         [SerializeField] private CraftUiController _craft;
 
+        [Header("Actions")]
+        [SerializeField] private InputActionReference _inventoryAction;
+        [SerializeField] private InputActionReference _cancelAction;
+
+        [Header("Events")]
         [SerializeField] private GameplayEvents _gameplayEvents;
 
         private State _state;
@@ -38,6 +45,9 @@ namespace RPGGame.UiControllers
 
         private void Start()
         {
+            _inventoryAction.action.Enable();
+            _cancelAction.action.Enable();
+
             SetState(State.Game);
         }
 
@@ -45,12 +55,12 @@ namespace RPGGame.UiControllers
         {
             if (_state == State.Game)
             {
-                if (Input.GetKeyDown(KeyCode.I))
+                if (_inventoryAction.action.WasReleasedThisFrame())
                     SetState(State.Inventory);
             }
             else if (_state == State.Inventory)
             {
-                if (Input.GetKeyDown(KeyCode.I) || Input.GetKeyDown(KeyCode.Escape))
+                if (_inventoryAction.action.WasReleasedThisFrame() || _cancelAction.action.WasReleasedThisFrame())
                     SetState(State.Game);
             }
         }

@@ -206,21 +206,21 @@ namespace RPGGame.Model
 
         public void OnInput(NetworkRunner runner, NetworkInput input)
         {
-            Vector3 moveDirection = default;
+            // Vector3 moveDirection = default;
 
-            float x = Input.GetAxis("Horizontal");
-            float y = Input.GetAxis("Vertical");
+            // float x = Input.GetAxis("Horizontal");
+            // float y = Input.GetAxis("Vertical");
 
-            moveDirection += x * Camera.main.transform.right;
-            moveDirection += y * Camera.main.transform.forward;
-            moveDirection.y = 0f;
-            moveDirection.Normalize();
+            // moveDirection += x * Camera.main.transform.right;
+            // moveDirection += y * Camera.main.transform.forward;
+            // moveDirection.y = 0f;
+            // moveDirection.Normalize();
 
-            _inputData.MoveDirection = moveDirection;
+            // _inputData.MoveDirection = moveDirection;
 
-            input.Set(_inputData);
+            // input.Set(_inputData);
 
-            _inputData.MoveDirection = default;
+            // _inputData.MoveDirection = default;
         }
 
         public void OnConnectedToServer(NetworkRunner runner) {}

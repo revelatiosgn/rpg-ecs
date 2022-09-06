@@ -44,24 +44,24 @@ namespace RPGGame.Gameplay
 
         public override void FixedUpdateNetwork()
         {
-            if (GetInput(out InputData inputData))
-            {
-                Vector3 direction = inputData.MoveDirection;
+            // if (GetInput(out InputData inputData))
+            // {
+            //     Vector3 direction = inputData.MoveDirection;
 
-                direction.y = 0f;
-                direction.Normalize();
+            //     direction.y = 0f;
+            //     direction.Normalize();
 
-                _kcc.SetInputDirection(direction);
-                _kcc.SetKinematicVelocity(direction * _speed);
+            //     _kcc.SetInputDirection(direction);
+            //     _kcc.SetKinematicVelocity(direction * _speed);
 
-                if (direction.sqrMagnitude > 0f)
-                {
-                    Quaternion targetQ = Quaternion.AngleAxis(Mathf.Atan2(direction.z, direction.x) * Mathf.Rad2Deg - 90, Vector3.down);
-                    _kcc.SetLookRotation(Quaternion.RotateTowards(transform.rotation, targetQ, _lookTurnRate * 360 * Runner.DeltaTime));
-                }
-            }
+            //     if (direction.sqrMagnitude > 0f)
+            //     {
+            //         Quaternion targetQ = Quaternion.AngleAxis(Mathf.Atan2(direction.z, direction.x) * Mathf.Rad2Deg - 90, Vector3.down);
+            //         _kcc.SetLookRotation(Quaternion.RotateTowards(transform.rotation, targetQ, _lookTurnRate * 360 * Runner.DeltaTime));
+            //     }
+            // }
 
-            _animator.SetFloat("MoveSpeed", _kcc.RenderData.RealSpeed);
+            // _animator.SetFloat("MoveSpeed", _kcc.RenderData.RealSpeed);
         }
 
         [Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority)]

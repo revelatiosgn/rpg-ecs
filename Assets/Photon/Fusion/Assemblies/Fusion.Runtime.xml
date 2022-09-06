@@ -1714,6 +1714,11 @@
             The Animator being synced.
             </summary>
         </member>
+        <member name="F:Fusion.NetworkMecanimAnimator.TotalWords">
+            <summary>
+            The number of words allocated per snapshot for serialization of the Animator. (One Word is 32 bits, or 4 bytes).
+            </summary>
+        </member>
         <member name="F:Fusion.NetworkMecanimAnimator.SyncSettings">
             <summary>
             Flags controlling which Mecanim data will be synced.
@@ -7006,6 +7011,12 @@
             </summary>
             <param name="player">Player to disconnect</param>
         </member>
+        <member name="M:Fusion.NetworkRunner.Disconnect(Fusion.Sockets.NetAddress)">
+            <summary>
+            Disconnect a client based on its NetAddress
+            </summary>
+            <param name="address">NetAddress of the client</param>
+        </member>
         <member name="M:Fusion.NetworkRunner.Connect(Fusion.Sockets.NetAddress,System.Byte[],System.Byte[])">
             <summary>
             Connect this <see cref="T:Fusion.NetworkRunner"/> as a client to a Server.
@@ -7980,6 +7991,11 @@
             Lobby Name
             </summary>
         </member>
+        <member name="P:Fusion.LobbyInfo.Region">
+            <summary>
+            Stores the current connected Region
+            </summary>
+        </member>
         <member name="T:Fusion.SessionInfo">
             <summary>
             Holds information about the Game Session
@@ -8545,6 +8561,12 @@
             </summary>
             <param name="dt">Delta Time used to forward the simulation</param>
             <returns>How many Ticks executed on this Update</returns>
+        </member>
+        <member name="M:Fusion.Simulation.Server.Disconnect(Fusion.Sockets.NetAddress)">
+            <summary>
+            Disconnect a client based on it's NetAddress
+            </summary>
+            <param name="address">Client Adress to Disconnect</param>
         </member>
         <member name="T:Fusion.Simulation.Statistics.StatSourceTypes">
             <summary>

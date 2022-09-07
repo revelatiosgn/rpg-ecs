@@ -2,10 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using Fusion;
 using Fusion.KCC;
+using RPGGame.Gameplay.Ecs;
 using RPGGame.Model;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using Voody.UniLeo.Lite;
 
 namespace RPGGame.Gameplay
 {
@@ -17,11 +19,7 @@ namespace RPGGame.Gameplay
         [Networked, Capacity(100), UnitySerializeField]
         public NetworkDictionary<NetworkId, Interactable> Interactables => default;
 
-        public Interactable IntendedInteractable;
-        public Interactable TargetInteractable;
-
-        [Networked(OnChanged = nameof(OnChangedTargetInteractableId))]
-        public NetworkId TargetInteractableId { get; set; }
+        public Interactable Target;
 
         private void OnEnable()
         {
@@ -49,7 +47,7 @@ namespace RPGGame.Gameplay
                         Interactable target = collider.Interactable;
                         if (Interactables.TryGet(target.Object.Id, out Interactable interactable))
                         {
-                            RPC_IntendInteract(interactable.Object.Id);
+                            RPC_Interact(interactable.Object.Id);
                         }
                     }
                 }
@@ -57,14 +55,16 @@ namespace RPGGame.Gameplay
         }
         
         [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
-        private void RPC_IntendInteract(NetworkId interactableId)
+        private void RPC_Interact(NetworkId interactableId)
         {
             if (Object.HasStateAuthority)
             {
                 if (Interactables.TryGet(interactableId, out Interactable interactable))
                 {
-                    IntendedInteractable = interactable;
-                    Debug.Log($"RPC_IntendInteract {NetworkManager.Instance.GetPlayer(Object.InputAuthority).Nickname} with {IntendedInteractable.gameObject.name}");
+                    EcsManager.EventBus.RaiseEvent<OnPlayerInteract>(new OnPlayerInteract { 
+                        SourceEntity = GetComponent<EntityObject>().Id,
+                        TargetEntity = interactable.GetComponent<EntityObject>().Id
+                    });
                 }
             }
         }
@@ -82,20 +82,13 @@ namespace RPGGame.Gameplay
         {
             if (Object.HasStateAuthority)
             {
-                IntendedInteractable = null;
-            }
-        }
-
-        private static void OnChangedTargetInteractableId(Changed<Interactor> changed)
-        {
-            Interactor interactor = changed.Behaviour;
-            if (interactor.Interactables.TryGet(interactor.TargetInteractableId, out Interactable interactable))
-            {
-                interactor.TargetInteractable = interactable;
-            }
-            else
-            {
-                interactor.TargetInteractable = null;
+                if (Target != null)
+                {
+                    EcsManager.EventBus.RaiseEvent<OnPlayerInterruptInteract>(new OnPlayerInterruptInteract { 
+                        SourceEntity = GetComponent<EntityObject>().Id,
+                        TargetEntity = Target.GetComponent<EntityObject>().Id
+                    });
+                }
             }
         }
 

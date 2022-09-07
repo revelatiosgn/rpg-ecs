@@ -1,13 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
+using Example;
+using Fusion.KCC;
 using UnityEngine;
 
 namespace RPGGame.Gameplay.Ecs
 {
-    public struct CrafterData
+    public struct PlayerInputData
     {
-        public Crafter Crafter;
-        public float CraftRate;
-        public bool IsCrafting;
+        public PlayerInput PlayerInput;
     }
 }

@@ -78,6 +78,7 @@ namespace Voody.UniLeo.Lite
                 switch (convertComponent.GetConvertMode())
                 {
                     case ConvertMode.ConvertAndDestroy:
+                        convertComponent.Set(entity, spawnWorld);
                         GameObject.Destroy(gameObject);
                         break;
                     case ConvertMode.ConvertAndInject:

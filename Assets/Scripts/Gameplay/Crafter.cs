@@ -17,7 +17,6 @@ namespace RPGGame.Gameplay
         [Networked(OnChanged = nameof(OnCraftProgressChanged))]
         public float CraftProgress { get; set; }
 
-        public string IntendRecipeId;
         public string CraftRecipeId;
 
         [SerializeField] private CraftRecipesConfig _craftRecipes;
@@ -37,17 +36,17 @@ namespace RPGGame.Gameplay
                 changed.Behaviour._gameplayEvents.OnCraftProgressChanged?.Invoke(changed.Behaviour.CraftProgress);
         }
 
-        public void CraftRecipe(string recipeId)
+        public void StartCraft(string recipeId)
         {
             if (Object.HasInputAuthority)
-                RPC_CraftRecipe(recipeId);
+                RPC_StartCraft(recipeId);
         }
         
         [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
-        private void RPC_CraftRecipe(string recipeId)
+        private void RPC_StartCraft(string recipeId)
         {
             if (Object.HasStateAuthority)
-                IntendRecipeId = recipeId;
+                CraftRecipeId = recipeId;
         }
     }
 }

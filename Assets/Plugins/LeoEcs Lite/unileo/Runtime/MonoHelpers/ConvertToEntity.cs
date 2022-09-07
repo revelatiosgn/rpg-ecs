@@ -17,6 +17,8 @@ namespace Voody.UniLeo.Lite
     {
         [SerializeField] private ConvertMode convertMode; // Conversion Mode of ECS
         [SerializeField] private String customWorld; // World Type of ECS
+        [SerializeField] private EntityObject _entityObject;
+
         private EcsPackedEntity packedEntity;
         private EcsWorld spawnWorld;
         private bool isProccessed = false;
@@ -82,6 +84,8 @@ namespace Voody.UniLeo.Lite
         {
             spawnWorld = world;
             packedEntity = EcsEntityExtensions.PackEntity(world, entity);
+
+            _entityObject?.Initialize(packedEntity, spawnWorld);
         }
     }
 }

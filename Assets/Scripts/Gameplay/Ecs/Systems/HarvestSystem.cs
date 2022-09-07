@@ -20,32 +20,28 @@ namespace RPGGame.Gameplay.Ecs
 
         public void Run(EcsSystems systems)
         {
-            foreach (OnInteractEnd onInteractEnd in EcsManager.EventBus.GetEvents<OnInteractEnd>())
+            foreach (OnInteractionEnd onInteractionEnd in EcsManager.EventBus.GetEvents<OnInteractionEnd>())
             {
-                int interactor = onInteractEnd.InteractorEntity;
-                int interactable = onInteractEnd.InteractableEntity;
+                int source = onInteractionEnd.SourceEntity;
+                int target = onInteractionEnd.TargetEntity;
 
-                if (_harvesterPool.Value.Has(interactor))
-                {
-                    Debug.Log("del harvester");
-                    _harvesterPool.Value.Del(interactor);
-                }
+                if (_harvesterPool.Value.Has(source))
+                    _harvesterPool.Value.Del(source);
             }
 
-            foreach (OnInteractBegin onInteractBegin in EcsManager.EventBus.GetEvents<OnInteractBegin>())
+            foreach (OnInteractionBegin onInteractionBegin in EcsManager.EventBus.GetEvents<OnInteractionBegin>())
             {
-                int interactor = onInteractBegin.InteractorEntity;
-                int interactable = onInteractBegin.InteractableEntity;
+                int source = onInteractionBegin.SourceEntity;
+                int target = onInteractionBegin.TargetEntity;
 
-                if (_harvestablePool.Value.Has(interactable))
+                if (_harvestablePool.Value.Has(target))
                 {
-                    Debug.Log("add harvester");
-                    ref HarvesterData harvesterData = ref _harvesterPool.Value.Add(interactor);
-                    harvesterData.TargetEntity = interactable;
+                    ref HarvesterData harvesterData = ref _harvesterPool.Value.Add(source);
+                    harvesterData.TargetEntity = target;
                     harvesterData.HarvestProgress = 0f;
                     harvesterData.HarvestRate = 1f;
 
-                    _animationPool.Value.Get(interactor).CharacterAnimation.PlayAnimation(_slashHash);
+                    _animationPool.Value.Get(source).CharacterAnimation.PlayAnimation(_slashHash);
                 }
             }
 
@@ -63,11 +59,11 @@ namespace RPGGame.Gameplay.Ecs
 
                     NetworkDictionary<NetworkString<_32>, int> items = _inventoryPool.Value.Get(harvesterEntity).Inventory.Items;
 
-                    Debug.Log($"HARVESTED {itemConfig.Name}");
-
                     items.TryGet(itemConfig.ID, out int count);
                     count++;
                     items.Set(itemConfig.ID, count);
+
+                    Debug.Log($"Harvested {itemConfig.Name}");
                 }
             }
         }

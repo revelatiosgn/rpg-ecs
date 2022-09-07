@@ -17,22 +17,22 @@ namespace RPGGame.Gameplay.Ecs
 
         public void Run(EcsSystems systems)
         {
-            foreach (OnInteractBegin onInteractBegin in EcsManager.EventBus.GetEvents<OnInteractBegin>())
+            foreach (OnInteractionBegin onInteractionBegin in EcsManager.EventBus.GetEvents<OnInteractionBegin>())
             {
-                int interactor = onInteractBegin.InteractorEntity;
-                int interactable = onInteractBegin.InteractableEntity;
+                int source = onInteractionBegin.SourceEntity;
+                int target = onInteractionBegin.TargetEntity;
 
-                if (_scenePortalPool.Value.Has(interactable) && _interactorPool.Value.Has(interactor))
+                if (_scenePortalPool.Value.Has(target) && _interactorPool.Value.Has(source))
                 {
-                    Debug.Log($"{_interactorPool.Value.Get(interactor).Interactor.name} use {_scenePortalPool.Value.Get(interactable).ScenePortal.name}");
+                    Debug.Log($"{_interactorPool.Value.Get(source).Interactor.name} use {_scenePortalPool.Value.Get(target).ScenePortal.name}");
 
-                    PlayerCharacter playerCharacter = _interactorPool.Value.Get(interactor).Interactor.GetComponent<PlayerCharacter>();
+                    PlayerCharacter playerCharacter = _interactorPool.Value.Get(source).Interactor.GetComponent<PlayerCharacter>();
 
-                    ScenePortal sourcePortal = _scenePortalPool.Value.Get(interactable).ScenePortal;
+                    ScenePortal sourcePortal = _scenePortalPool.Value.Get(target).ScenePortal;
                     ScenePortal targetPortal = ScenePortal.GetPortal(sourcePortal.TargetPortal);
 
                     playerCharacter.RPC_LoadScene(targetPortal.gameObject.scene.name);
-                    _kccPool.Value.Get(interactor).KCC.SetPosition(targetPortal.transform.position);
+                    _kccPool.Value.Get(source).KCC.SetPosition(targetPortal.transform.position);
                     playerCharacter.RPC_UnloadScene(sourcePortal.gameObject.scene.name);
                 }
             }

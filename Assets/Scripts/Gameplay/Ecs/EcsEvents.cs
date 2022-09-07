@@ -4,16 +4,28 @@ using System.Collections.Generic;
 
 namespace RPGGame.Gameplay.Ecs
 {
-    public struct OnInteractBegin : IEcsEvent
+    public struct OnPlayerInteract : IEcsEvent
     {
-        public int InteractorEntity;
-        public int InteractableEntity;
+        public int SourceEntity;
+        public int TargetEntity;
     }
 
-    public struct OnInteractEnd : IEcsEvent
+    public struct OnPlayerInterruptInteract : IEcsEvent
     {
-        public int InteractorEntity;
-        public int InteractableEntity;
+        public int SourceEntity;
+        public int TargetEntity;
+    }
+
+    public struct OnInteractionBegin : IEcsEvent
+    {
+        public int SourceEntity;
+        public int TargetEntity;
+    }
+
+    public struct OnInteractionEnd : IEcsEvent
+    {
+        public int SourceEntity;
+        public int TargetEntity;
     }
 }
 

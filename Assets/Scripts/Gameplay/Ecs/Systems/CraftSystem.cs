@@ -21,54 +21,51 @@ namespace RPGGame.Gameplay.Ecs
 
         public void Run(EcsSystems systems)
         {
-            foreach (OnInteractEnd onInteractEnd in EcsManager.EventBus.GetEvents<OnInteractEnd>())
+            foreach (OnInteractionEnd onInteractionEnd in EcsManager.EventBus.GetEvents<OnInteractionEnd>())
             {
-                int interactor = onInteractEnd.InteractorEntity;
-                int interactable = onInteractEnd.InteractableEntity;
+                int source = onInteractionEnd.SourceEntity;
+                int target = onInteractionEnd.TargetEntity;
 
-                if (_crafterPool.Value.Has(interactor))
+                if (_crafterPool.Value.Has(source))
                 {
-                    Debug.Log("del crafter");
-                    ref CrafterData crafterData = ref _crafterPool.Value.Get(interactor);
+                    ref CrafterData crafterData = ref _crafterPool.Value.Get(source);
+                    crafterData.Crafter.CraftRecipeId = string.Empty;
                     crafterData.Crafter.WorkbenchId = "0";
-                    _crafterPool.Value.Del(interactor);
+                    _crafterPool.Value.Del(source);
                 }
             }
 
-            foreach (OnInteractBegin onInteractBegin in EcsManager.EventBus.GetEvents<OnInteractBegin>())
+            foreach (OnInteractionBegin onInteractionBegin in EcsManager.EventBus.GetEvents<OnInteractionBegin>())
             {
-                int interactor = onInteractBegin.InteractorEntity;
-                int interactable = onInteractBegin.InteractableEntity;
+                int source = onInteractionBegin.SourceEntity;
+                int target = onInteractionBegin.TargetEntity;
 
-                if (_workbenchPool.Value.Has(interactable))
+                if (_workbenchPool.Value.Has(target))
                 {
-                    Debug.Log("add crafter");
-
-                    ref CrafterData crafterData = ref _crafterPool.Value.Add(interactor);
-                    crafterData.Crafter = _interactorPool.Value.Get(interactor).Interactor.GetComponent<Crafter>();
-                    
-                    ref WorkbenchData workbenchData = ref _workbenchPool.Value.Get(interactable);
-                    crafterData.Crafter.WorkbenchId = workbenchData.Workbench.WorkbenchConfig.ID;
-                    crafterData.CraftRate = 1f;
+                    ref CrafterData crafterData = ref _crafterPool.Value.Add(source);
+                    crafterData.Crafter = _interactorPool.Value.Get(source).Interactor.GetComponent<Crafter>();
                     crafterData.Crafter.CraftProgress = 0f;
+                    crafterData.CraftRate = 1f;
+                    crafterData.IsCrafting = false;
+                    
+                    ref WorkbenchData workbenchData = ref _workbenchPool.Value.Get(target);
+                    crafterData.Crafter.WorkbenchId = workbenchData.Workbench.WorkbenchConfig.ID;
 
-                    _animationPool.Value.Get(interactor).CharacterAnimation.PlayAnimation(_craftHash);
+                    _animationPool.Value.Get(source).CharacterAnimation.PlayAnimation(_craftHash);
                 }
             }
 
             foreach (int crafterEntity in _crafterFilter.Value)
             {
                 ref CrafterData crafterData = ref _crafterPool.Value.Get(crafterEntity);
-                if (string.IsNullOrEmpty(crafterData.Crafter.IntendRecipeId))
+                if (string.IsNullOrEmpty(crafterData.Crafter.CraftRecipeId))
                     continue;
 
-                CraftRecipeConfig recipeConfig = crafterData.Crafter.CraftRecipes.GetItem(crafterData.Crafter.IntendRecipeId);
+                CraftRecipeConfig recipeConfig = crafterData.Crafter.CraftRecipes.GetItem(crafterData.Crafter.CraftRecipeId);
                 NetworkDictionary<NetworkString<_32>, int> inventoryItems = _inventoryPool.Value.Get(crafterEntity).Inventory.Items;
 
-                if (crafterData.Crafter.CraftProgress == 0f)
+                if (!crafterData.IsCrafting)
                 {
-                    Debug.Log($"Start craft! {recipeConfig.Result.Config.Name}");
-
                     foreach (CraftRecipeConfig.RecipeItem recipeItem in recipeConfig.Requires)
                     {
                         inventoryItems.TryGet(recipeItem.Config.ID, out int count);
@@ -78,42 +75,28 @@ namespace RPGGame.Gameplay.Ecs
                         else
                             inventoryItems.Set(recipeItem.Config.ID, count);
                     }
+
+                    crafterData.IsCrafting = true;
+
+                    Debug.Log($"Start craft {recipeConfig.Result.Config.Name}");
                 }
 
-                crafterData.Crafter.CraftProgress = crafterData.Crafter.CraftProgress + crafterData.CraftRate * EcsManager.DeltaTime;
+                if (crafterData.IsCrafting)
+                    crafterData.Crafter.CraftProgress = crafterData.Crafter.CraftProgress + crafterData.CraftRate * EcsManager.DeltaTime;
 
-                if (crafterData.Crafter.CraftProgress >= 1f)
+                if (crafterData.IsCrafting && crafterData.Crafter.CraftProgress >= 1f)
                 {
                     crafterData.Crafter.CraftProgress = 0f;
-                    crafterData.Crafter.IntendRecipeId = string.Empty;
+                    crafterData.Crafter.CraftRecipeId = string.Empty;
                     ItemConfig craftedItem = recipeConfig.Result.Config;
-                    Debug.Log($"Crafted! {craftedItem.Name}");
 
                     inventoryItems.TryGet(craftedItem.ID, out int count);
                     count += recipeConfig.Result.Count;
                     inventoryItems.Set(craftedItem.ID, count);
+
+                    Debug.Log($"Crafted {craftedItem.Name}");
                 }
             }
-
-            // foreach (int harvesterEntity in _harvesterFilter.Value)
-            // {
-            //     ref HarvesterData harvesterData = ref _harvesterPool.Value.Get(harvesterEntity);
-            //     ref HarvestableData harvestableData = ref _harvestablePool.Value.Get(harvesterData.TargetEntity);
-
-            //     harvesterData.HarvestProgress += harvesterData.HarvestRate * EcsManager.NetworkRunner.DeltaTime;
-
-            //     if (harvesterData.HarvestProgress >= 1f)
-            //     {
-            //         harvesterData.HarvestProgress = 0f;
-            //         InventoryItemConfig itemConfig = harvestableData.Harvestable.HarvestItem;
-
-            //         NetworkDictionary<NetworkString<_32>, int> items = _inventoryPool.Value.Get(harvesterEntity).Inventory.Items;
-
-            //         items.TryGet(itemConfig.ID, out int count);
-            //         count++;
-            //         items.Set(itemConfig.ID, count);
-            //     }
-            // }
         }
     }
 }

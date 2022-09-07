@@ -126,7 +126,7 @@ namespace RPGGame.UiControllers
 
         private void OnCraft()
         {
-            _crafter.CraftRecipe(_selectedRecipe.ID);
+            _crafter.StartCraft(_selectedRecipe.ID);
         }
 
         private void OnInventoryChanged(NetworkDictionary<NetworkString<_32>, int> inventory)

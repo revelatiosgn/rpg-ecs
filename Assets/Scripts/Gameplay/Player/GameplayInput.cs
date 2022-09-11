@@ -23,6 +23,7 @@ namespace Example
 		// PUBLIC MEMBERS
 
 		public Vector2        MoveDirection;
+		public Vector2        LookTarget;
 		public Vector2        LookRotationDelta;
 		public Vector3        HeadPosition;
 		public Quaternion     HeadRotation;

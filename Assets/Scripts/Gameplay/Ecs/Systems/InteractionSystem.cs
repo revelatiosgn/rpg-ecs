@@ -10,26 +10,27 @@ namespace RPGGame.Gameplay.Ecs
 {
     public class InteractionSystem : IEcsRunSystem
     {
-        private readonly EcsFilterInject<Inc<InteractorData, TransformData, PlayerInputData, AnimationData>> _interactorFilter = default;
+        private readonly EcsFilterInject<Inc<InteractorData, TransformData, PlayerControllerData, AnimationData>> _interactorFilter = default;
 
         private readonly EcsPoolInject<InteractorData> _interactorPool = default;
         private readonly EcsPoolInject<InteractableData> _interactablePool = default;
         private readonly EcsPoolInject<TransformData> _transformPool = default;
-        private readonly EcsPoolInject<PlayerInputData> _playerInputPool = default;
+        private readonly EcsPoolInject<PlayerControllerData> _playerControllerPool = default;
         private readonly EcsPoolInject<AnimationData> _animationPool = default;
         
         private int _moveHash = Animator.StringToHash("Move");
 
         public void Run(EcsSystems systems)
         {
-            // End interact by move
             foreach (int entity in _interactorFilter.Value)
             {
                 ref InteractorData source = ref _interactorPool.Value.Get(entity);
+
+                // End interact by move
                 if (source.Interactor.Target != null)
                 {
-                    ref PlayerInputData playerInputData = ref _playerInputPool.Value.Get(entity);
-                    if (playerInputData.PlayerInput.FixedInput.MoveDirection != Vector2.zero)
+                    ref PlayerControllerData playerControllerData = ref _playerControllerPool.Value.Get(entity);
+                    if (playerControllerData.PlayerController.Input.FixedInput.MoveDirection != Vector2.zero)
                     {
                         EcsManager.EventBus.RaiseEvent<OnInteractionEnd>(new OnInteractionEnd { 
                             SourceEntity = entity,
@@ -39,6 +40,13 @@ namespace RPGGame.Gameplay.Ecs
                         source.Interactor.Target = null;
                         _animationPool.Value.Get(entity).CharacterAnimation.PlayAnimation(_moveHash);
                     }
+                }
+
+                // Look at target
+                if (source.Interactor.Target != null)
+                {
+                    ref TransformData transformData = ref _transformPool.Value.Get(entity);
+                    transformData.Transform.LookAt(source.Interactor.Target.transform, Vector3.up);
                 }
             }
             
@@ -69,8 +77,8 @@ namespace RPGGame.Gameplay.Ecs
                 if (!source.Interactor.Interactables.ContainsKey(target.Interactable.Object.Id))
                     continue;
 
-                ref PlayerInputData playerInputData = ref _playerInputPool.Value.Get(onPlayerInteract.SourceEntity);
-                if (playerInputData.PlayerInput.FixedInput.MoveDirection != Vector2.zero)
+                ref PlayerControllerData playerControllerData = ref _playerControllerPool.Value.Get(onPlayerInteract.SourceEntity);
+                if (playerControllerData.PlayerController.Input.FixedInput.MoveDirection != Vector2.zero)
                     continue;
 
                 Debug.Log($"OnPlayerInteract {source.Interactor.name} with {target.Interactable.name}");

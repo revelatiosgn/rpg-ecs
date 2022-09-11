@@ -516,6 +516,14 @@ namespace Example
 				_renderInput.LMB = mouse.leftButton.isPressed;
 				_renderInput.RMB = mouse.rightButton.isPressed;
 				_renderInput.MMB = mouse.middleButton.isPressed;
+
+				Ray ray = Camera.main.ScreenPointToRay(mouse.position.ReadValue());
+				Plane plane = new Plane(Vector3.up, Vector3.zero);
+				if (plane.Raycast(ray, out float enter))
+				{
+					Vector3 hitPoint = ray.GetPoint(enter);
+					_renderInput.LookTarget = new Vector2(hitPoint.x, hitPoint.z);
+				}
 			}
 
 			Keyboard keyboard = Keyboard.current;
@@ -568,6 +576,8 @@ namespace Example
 
 			_cachedInput.Actions            = new NetworkButtons(_cachedInput.Actions.Bits | _renderInput.Actions.Bits);
 			_cachedInput.MoveDirection      = _cachedMoveDirection / _cachedMoveDirectionSize;
+
+			_cachedInput.LookTarget = _renderInput.LookTarget;
 		}
 
 		private Vector2 ProcessLookRotationDelta(Vector2 lookRotationDelta, Vector2 lookRotationSensitivity)

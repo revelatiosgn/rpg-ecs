@@ -11,6 +11,10 @@ namespace Example
 	[OrderBefore(typeof(KCC))]
 	public sealed class ThirdPersonPlayerController : PlayerController
 	{
+        [SerializeField] private Animator _animator;
+
+		public RotationMode Rotation;
+
 		public override sealed void FixedUpdateNetwork()
 		{
 			base.FixedUpdateNetwork();
@@ -32,12 +36,23 @@ namespace Example
 			Vector3 inputDirection = new Vector3(Input.FixedInput.MoveDirection.x, 0.0f, Input.FixedInput.MoveDirection.y);
 
 			KCC.SetInputDirection(inputDirection);
-			
-			if (inputDirection != Vector3.zero)
+
+			if (Rotation == RotationMode.RotateTowardsMove)
 			{
-				Quaternion targetQ = Quaternion.AngleAxis(Mathf.Atan2(inputDirection.z, inputDirection.x) * Mathf.Rad2Deg - 90, Vector3.down);
-				KCC.SetLookRotation(Quaternion.RotateTowards(KCC.Data.LookRotation, targetQ, LookTurnRate * 360 * Runner.DeltaTime));
-				// KCC.SetLookRotation(Quaternion.Euler(0f, 30f, 0f));
+				if (inputDirection != Vector3.zero)
+				{
+					Quaternion targetQ = Quaternion.AngleAxis(Mathf.Atan2(inputDirection.z, inputDirection.x) * Mathf.Rad2Deg - 90, Vector3.down);
+					KCC.SetLookRotation(Quaternion.RotateTowards(KCC.Data.LookRotation, targetQ, LookTurnRate * 360 * Runner.DeltaTime));
+				}
+			}
+			else
+			{
+				Vector2 lookDirection = Input.FixedInput.LookTarget - new Vector2(transform.position.x, transform.position.z);
+				if (lookDirection != Vector2.zero)
+				{
+					Quaternion targetQ = Quaternion.AngleAxis(Mathf.Atan2(lookDirection.y, lookDirection.x) * Mathf.Rad2Deg - 90, Vector3.down);
+					KCC.SetLookRotation(targetQ);
+				}
 			}
 
 			if (Input.WasActivated(EGameplayInputAction.Jump) == true)
@@ -100,6 +115,12 @@ namespace Example
 
 			// At his point, KCC haven't been updated yet (except look rotation, which propagates immediately).
 			// Camera have to be synced later (LateUpdate in this case) or we have to update KCC manually (this approach is used in AdvancedPlayer).
+		}
+
+		public enum RotationMode
+		{
+			RotateTowardsMove,
+			RotateTowardsCursor
 		}
 	}
 }

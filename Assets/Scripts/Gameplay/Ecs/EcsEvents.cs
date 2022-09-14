@@ -22,6 +22,16 @@ namespace RPGGame.Gameplay.Ecs
         public PlayerBehaviour.PlayerBehaviourState BehaviourState;
     }
 
+    public struct OnPlayerAttackBegin : IEcsEvent
+    {
+        public int Entity;
+    }
+
+    public struct OnPlayerAttackEnd : IEcsEvent
+    {
+        public int Entity;
+    }
+
     public struct OnInteractionBegin : IEcsEvent
     {
         public int SourceEntity;

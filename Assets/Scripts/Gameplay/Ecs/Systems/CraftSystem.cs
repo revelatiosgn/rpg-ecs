@@ -17,6 +17,7 @@ namespace RPGGame.Gameplay.Ecs
         private readonly EcsPoolInject<InventoryData> _inventoryPool = default;
         private readonly EcsPoolInject<AnimationData> _animationPool = default;
 
+        private int _noneHash = Animator.StringToHash("None");
         private int _craftHash = Animator.StringToHash("Craft");
 
         public void Run(EcsSystems systems)
@@ -32,6 +33,10 @@ namespace RPGGame.Gameplay.Ecs
                     crafterData.Crafter.CraftRecipeId = string.Empty;
                     crafterData.Crafter.WorkbenchId = "0";
                     _crafterPool.Value.Del(source);
+                    
+                    CharacterAnimation characterAnimation = _animationPool.Value.Get(source).CharacterAnimation;
+                    characterAnimation.PlayAnimation(_noneHash, CharacterAnimation.AnimatorLayer.Labor);
+                    characterAnimation.SetLayerWeight(0f, CharacterAnimation.AnimatorLayer.Labor);
                 }
             }
 
@@ -51,7 +56,9 @@ namespace RPGGame.Gameplay.Ecs
                     ref WorkbenchData workbenchData = ref _workbenchPool.Value.Get(target);
                     crafterData.Crafter.WorkbenchId = workbenchData.Workbench.WorkbenchConfig.ID;
 
-                    _animationPool.Value.Get(source).CharacterAnimation.PlayAnimation(_craftHash);
+                    CharacterAnimation characterAnimation = _animationPool.Value.Get(source).CharacterAnimation;
+                    characterAnimation.PlayAnimation(_craftHash, CharacterAnimation.AnimatorLayer.Labor);
+                    characterAnimation.SetLayerWeight(1f, CharacterAnimation.AnimatorLayer.Labor);
                 }
             }
 

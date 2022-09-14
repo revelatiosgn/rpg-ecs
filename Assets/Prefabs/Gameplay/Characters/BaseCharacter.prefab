@@ -80,6 +80,7 @@ GameObject:
   - component: {fileID: 122454692460909075}
   - component: {fileID: 8994857128925944496}
   - component: {fileID: 1677639414154542449}
+  - component: {fileID: 5617255256093420233}
   m_Layer: 0
   m_Name: EcsProviders
   m_TagString: Untagged
@@ -208,6 +209,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _playerController: {fileID: 444691681549174560}
+--- !u!114 &5617255256093420233
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6867720288049615292}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9fea7373d4ea0e43967d47f8d735efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _combatant: {fileID: 6681387956981131105}
 --- !u!1 &8003937688719895943
 GameObject:
   m_ObjectHideFlags: 0
@@ -307,6 +321,7 @@ GameObject:
   - component: {fileID: 1556794844909863682}
   - component: {fileID: -7283534134028488346}
   - component: {fileID: -7284389899716528601}
+  - component: {fileID: 6681387956981131105}
   m_Layer: 0
   m_Name: BaseCharacter
   m_TagString: Untagged
@@ -395,6 +410,7 @@ MonoBehaviour:
   - {fileID: 1556794844909863682}
   - {fileID: -7283534134028488346}
   - {fileID: -7284389899716528601}
+  - {fileID: 6681387956981131105}
   SimulationBehaviours: []
 --- !u!114 &-3426091400361321445
 MonoBehaviour:
@@ -477,7 +493,7 @@ MonoBehaviour:
   _jumpImpulse: {x: 0, y: 6, z: 0}
   _dashProcessor: {fileID: 6842172071603508257}
   _lookTurnRate: 1.5
-  _rotationMode: 0
+  Rotation: 0
 --- !u!114 &4129055749866446635
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -580,9 +596,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _interpolationDataSource: 0
+  _networkAnimator: {fileID: 0}
   _animator: {fileID: 0}
   _kcc: {fileID: -3426091400361321445}
-  _AnimationHash: 0
+  _Animation:
+    Layer: 0
+    Hash: 1326225478
+  _LayerWeight:
+    Layer: 0
+    Weight: 1
   _Behaviour: 0
 --- !u!114 &-7283534134028488346
 MonoBehaviour:
@@ -621,6 +643,22 @@ MonoBehaviour:
   CraftRecipeId: 
   _craftRecipes: {fileID: 11400000, guid: 764e180bd66a9724191ba864603fe5e2, type: 2}
   _gameplayEvents: {fileID: 11400000, guid: f2ed31ee1df734044b438fa4aad5e82e, type: 2}
+--- !u!114 &6681387956981131105
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8410269978598816485}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: abb3f9de7221751488b839b3aac75c17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _interpolationDataSource: 0
+  _entityObject: {fileID: 7537757227038135359}
+  _playerController: {fileID: 444691681549174560}
+  _characterAnimation: {fileID: 1556794844909863682}
 --- !u!1 &9215437955160205269
 GameObject:
   m_ObjectHideFlags: 0

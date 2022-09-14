@@ -39,6 +39,7 @@ namespace RPGGame.Gameplay.Ecs
             _systems.ConvertScene();
             _systems
                 .Add(new PlayerBehaviourSystem())
+                .Add(new CombatSystem())
                 .Add(new AnimationSystem())
                 .Add(new InteractionSystem())
                 .Add(new HarvestSystem())

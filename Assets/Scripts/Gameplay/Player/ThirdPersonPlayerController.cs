@@ -5,15 +5,16 @@ namespace Example
 	using Fusion;
 	using Fusion.KCC;
 
-	/// <summary>
-	/// Advanced player implementation with third person view.
-	/// </summary>
-	[OrderBefore(typeof(KCC))]
+    /// <summary>
+    /// Advanced player implementation with third person view.
+    /// </summary>
+    [OrderBefore(typeof(KCC))]
 	public sealed class ThirdPersonPlayerController : PlayerController
 	{
-        [SerializeField] private Animator _animator;
-
 		public RotationMode Rotation;
+
+		public Action OnAttackBegin;
+		public Action OnAttackEnd;
 
 		public override sealed void FixedUpdateNetwork()
 		{
@@ -85,6 +86,12 @@ namespace Example
 			if (Input.WasActivated(EGameplayInputAction.LMB) == true)
 			{
 				// Left mouse button action
+				OnAttackBegin?.Invoke();
+			}
+
+			if (Input.WasDeactivated(EGameplayInputAction.LMB) == true)
+			{
+				OnAttackEnd?.Invoke();
 			}
 
 			if (Input.WasActivated(EGameplayInputAction.RMB) == true)

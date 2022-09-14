@@ -16,7 +16,8 @@ namespace RPGGame.Gameplay.Ecs
         private readonly EcsPoolInject<HarvestableData> _harvestablePool = default;
         private readonly EcsPoolInject<AnimationData> _animationPool = default;
 
-        private int _slashHash = Animator.StringToHash("Slash");
+        private int _noneHash = Animator.StringToHash("None");
+        private int _harvestHash = Animator.StringToHash("Harvest");
 
         public void Run(EcsSystems systems)
         {
@@ -27,6 +28,10 @@ namespace RPGGame.Gameplay.Ecs
 
                 if (_harvesterPool.Value.Has(source))
                     _harvesterPool.Value.Del(source);
+
+                CharacterAnimation characterAnimation = _animationPool.Value.Get(source).CharacterAnimation;
+                characterAnimation.PlayAnimation(_noneHash, CharacterAnimation.AnimatorLayer.Labor);
+                characterAnimation.SetLayerWeight(0f, CharacterAnimation.AnimatorLayer.Labor);
             }
 
             foreach (OnInteractionBegin onInteractionBegin in EcsManager.EventBus.GetEvents<OnInteractionBegin>())
@@ -41,7 +46,9 @@ namespace RPGGame.Gameplay.Ecs
                     harvesterData.HarvestProgress = 0f;
                     harvesterData.HarvestRate = 1f;
 
-                    _animationPool.Value.Get(source).CharacterAnimation.PlayAnimation(_slashHash);
+                    CharacterAnimation characterAnimation = _animationPool.Value.Get(source).CharacterAnimation;
+                    characterAnimation.PlayAnimation(_harvestHash, CharacterAnimation.AnimatorLayer.Labor);
+                    characterAnimation.SetLayerWeight(1f, CharacterAnimation.AnimatorLayer.Labor);
                 }
             }
 

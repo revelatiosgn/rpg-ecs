@@ -17,7 +17,9 @@ namespace RPGGame.Gameplay.Ecs
         private readonly EcsPoolInject<TransformData> _transformPool = default;
         private readonly EcsPoolInject<PlayerControllerData> _playerControllerPool = default;
         private readonly EcsPoolInject<AnimationData> _animationPool = default;
+        private readonly EcsPoolInject<PlayerBehaviourData> _playerBehaviourPool = default;
         
+        private int _noneHash = Animator.StringToHash("None");
         private int _moveHash = Animator.StringToHash("Move");
 
         public void Run(EcsSystems systems)
@@ -31,15 +33,15 @@ namespace RPGGame.Gameplay.Ecs
                 {
                     ref PlayerControllerData playerControllerData = ref _playerControllerPool.Value.Get(entity);
                     if (playerControllerData.PlayerController.Input.FixedInput.MoveDirection != Vector2.zero)
-                    {
-                        EcsManager.EventBus.RaiseEvent<OnInteractionEnd>(new OnInteractionEnd { 
-                            SourceEntity = entity,
-                            TargetEntity = source.Interactor.Target.GetComponent<EntityObject>().Id
-                        });
-
-                        source.Interactor.Target = null;
-                        _animationPool.Value.Get(entity).CharacterAnimation.PlayAnimation(_moveHash);
-                    }
+                        EndInteract(entity);
+                }
+                
+                // End interact by change behaviour to combat
+                if (source.Interactor.Target != null)
+                {
+                    ref PlayerBehaviourData playerBehaviourData = ref _playerBehaviourPool.Value.Get(entity);
+                    if (playerBehaviourData.PlayerBehaviour.BehaviourState != PlayerBehaviour.PlayerBehaviourState.Labor)
+                        EndInteract(entity);
                 }
 
                 // Look at target
@@ -56,16 +58,7 @@ namespace RPGGame.Gameplay.Ecs
                 ref InteractorData source = ref _interactorPool.Value.Get(onPlayerInterruptInteract.SourceEntity);
                 ref InteractableData target = ref _interactablePool.Value.Get(onPlayerInterruptInteract.TargetEntity);
 
-                if (source.Interactor.Target != null)
-                {
-                    EcsManager.EventBus.RaiseEvent<OnInteractionEnd>(new OnInteractionEnd { 
-                        SourceEntity = onPlayerInterruptInteract.SourceEntity,
-                        TargetEntity = source.Interactor.Target.GetComponent<EntityObject>().Id
-                    });
-                }
-
-                source.Interactor.Target = null;
-                _animationPool.Value.Get(onPlayerInterruptInteract.SourceEntity).CharacterAnimation.PlayAnimation(_moveHash);
+                EndInteract(onPlayerInterruptInteract.SourceEntity);
             }
             
             // Begin interact
@@ -73,6 +66,10 @@ namespace RPGGame.Gameplay.Ecs
             {
                 ref InteractorData source = ref _interactorPool.Value.Get(onPlayerInteract.SourceEntity);
                 ref InteractableData target = ref _interactablePool.Value.Get(onPlayerInteract.TargetEntity);
+
+                ref PlayerBehaviourData playerBehaviourData = ref _playerBehaviourPool.Value.Get(onPlayerInteract.SourceEntity);
+                if (playerBehaviourData.PlayerBehaviour.BehaviourState != PlayerBehaviour.PlayerBehaviourState.Labor)
+                    return;
 
                 if (!source.Interactor.Interactables.ContainsKey(target.Interactable.Object.Id))
                     continue;
@@ -83,20 +80,38 @@ namespace RPGGame.Gameplay.Ecs
 
                 Debug.Log($"OnPlayerInteract {source.Interactor.name} with {target.Interactable.name}");
 
-                if (source.Interactor.Target != null)
-                {
-                    EcsManager.EventBus.RaiseEvent<OnInteractionEnd>(new OnInteractionEnd { 
-                        SourceEntity = onPlayerInteract.SourceEntity,
-                        TargetEntity = source.Interactor.Target.GetComponent<EntityObject>().Id
-                    });
-                }
+                BeginInteract(onPlayerInteract.SourceEntity, onPlayerInteract.TargetEntity);
+            }
+        }
 
-                source.Interactor.Target = target.Interactable;
-                EcsManager.EventBus.RaiseEvent<OnInteractionBegin>(new OnInteractionBegin { 
-                    SourceEntity = onPlayerInteract.SourceEntity,
-                    TargetEntity = onPlayerInteract.TargetEntity 
+        private void BeginInteract(int sourceEntity, int targetEntity)
+        {
+            ref InteractorData source = ref _interactorPool.Value.Get(sourceEntity);
+            ref InteractableData target = ref _interactablePool.Value.Get(targetEntity);
+
+            if (source.Interactor.Target != null)
+                EndInteract(sourceEntity);
+
+            source.Interactor.Target = target.Interactable;
+            EcsManager.EventBus.RaiseEvent<OnInteractionBegin>(new OnInteractionBegin { 
+                SourceEntity = sourceEntity,
+                TargetEntity = targetEntity 
+            });
+        }
+
+        private void EndInteract(int sourceEntity)
+        {
+            ref InteractorData source = ref _interactorPool.Value.Get(sourceEntity);
+
+            if (source.Interactor.Target != null)
+            {
+                EcsManager.EventBus.RaiseEvent<OnInteractionEnd>(new OnInteractionEnd { 
+                    SourceEntity = sourceEntity,
+                    TargetEntity = source.Interactor.Target.GetComponent<EntityObject>().Id
                 });
             }
+
+            source.Interactor.Target = null;
         }
     }
 }

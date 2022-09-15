@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement;
 
 namespace RPGGame.Gameplay
 {
-    public class PlayerCharacter : NetworkBehaviour
+    public class PlayerCharacter : NetworkBehaviour, ISpawned
     {
         [SerializeField] private KCC _kcc;
         public KCC KCC => _kcc;
@@ -29,31 +29,36 @@ namespace RPGGame.Gameplay
         [Networked(OnChanged = nameof(OnChangedSceneIndex))]
         public int SceneIndex { get; set; }
 
-        private static void OnChangedSceneIndex(Changed<PlayerCharacter> changed)
-        {
-            Debug.Log($"OnChangedSceneIndex {changed.Behaviour.SceneIndex}");
-        }
-
         public override void Spawned()
         {
-            if (Object.HasInputAuthority)
+            if (HasStateAuthority)
+            {
+                SceneIndex = 2; // "Map_0" todo: get from settings
+            }
+
+            if (HasInputAuthority)
             {
                 _local = this;
             }
         }
 
-        [Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority)]
-        public void RPC_LoadScene(string sceneName)
+        private static void OnChangedSceneIndex(Changed<PlayerCharacter> changed)
         {
-            if (!HasStateAuthority)
-                NetworkManager.Instance.AdditiveSceneLoader.LoadScene(sceneName);
-        }
+            if (changed.Behaviour.HasStateAuthority || !changed.Behaviour.HasInputAuthority)
+                return;
 
-        [Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority)]
-        public void RPC_UnloadScene(string sceneName)
-        {
-            if (!HasStateAuthority)
-                NetworkManager.Instance.AdditiveSceneLoader.UnloadScene(sceneName);
+            int newIndex = changed.Behaviour.SceneIndex;
+            changed.LoadOld();
+            int oldIndex = changed.Behaviour.SceneIndex;
+
+            string pathToScene = SceneUtility.GetScenePathByBuildIndex(newIndex);
+            string newSceneName = System.IO.Path.GetFileNameWithoutExtension(pathToScene);
+            pathToScene = SceneUtility.GetScenePathByBuildIndex(oldIndex);
+            string oldSceneName = System.IO.Path.GetFileNameWithoutExtension(pathToScene);
+
+            if (oldIndex != 0)
+                NetworkManager.Instance.AdditiveSceneLoader.UnloadScene(oldSceneName);
+            NetworkManager.Instance.AdditiveSceneLoader.LoadScene(newSceneName);
         }
     }
 }

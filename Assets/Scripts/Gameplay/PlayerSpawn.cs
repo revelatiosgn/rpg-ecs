@@ -22,13 +22,10 @@ namespace RPGGame.Gameplay
 
             if (HasStateAuthority)
             {
+                // TODO: get from settings
                 NetworkManager.Instance.AdditiveSceneLoader.LoadScene("Map_0", () => SpawnCharacters());
                 NetworkManager.Instance.AdditiveSceneLoader.LoadScene("Map_1");
                 NetworkManager.Instance.AdditiveSceneLoader.LoadScene("SmallHouse");
-            }
-            else
-            {
-                NetworkManager.Instance.AdditiveSceneLoader.LoadScene("Map_0");
             }
         }
 
@@ -54,6 +51,8 @@ namespace RPGGame.Gameplay
             Vector3 position = new Vector3(Random.Range(-_spawnRadius, _spawnRadius), 0f, Random.Range(-_spawnRadius, _spawnRadius));
             PlayerCharacter playerCharacter = Runner.Spawn(_charactersConfig.PlayerCharacterPrefabs[player.CharacterIndex], position, Quaternion.identity, inputAuthority);
             _playerCharacters[inputAuthority] = playerCharacter;
+
+            // playerCharacter.SceneIndex = SceneManager.GetSceneByName("Map_0").buildIndex;
         }
 
         private void PlayerSpawned(PlayerRef playerRef, Player player)

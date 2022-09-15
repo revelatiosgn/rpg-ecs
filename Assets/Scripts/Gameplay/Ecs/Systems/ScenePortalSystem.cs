@@ -31,9 +31,8 @@ namespace RPGGame.Gameplay.Ecs
                     ScenePortal sourcePortal = _scenePortalPool.Value.Get(target).ScenePortal;
                     ScenePortal targetPortal = ScenePortal.GetPortal(sourcePortal.TargetPortal);
 
-                    playerCharacter.RPC_LoadScene(targetPortal.gameObject.scene.name);
+                    playerCharacter.SceneIndex = SceneManager.GetSceneByName(targetPortal.gameObject.scene.name).buildIndex;
                     _kccPool.Value.Get(source).KCC.SetPosition(targetPortal.transform.position);
-                    playerCharacter.RPC_UnloadScene(sourcePortal.gameObject.scene.name);
                 }
             }
         }
